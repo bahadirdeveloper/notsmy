@@ -3,7 +3,7 @@
 import { db } from '@/db';
 import { notifications } from '@/db/schema';
 import { auth } from '@/auth';
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, count } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 // Get unread notification count
@@ -11,8 +11,8 @@ export async function getUnreadCount() {
   const session = await auth();
   if (!session?.user?.id) throw new Error('Unauthorized');
 
-  const result = await db
-    .select()
+  const [result] = await db
+    .select({ value: count() })
     .from(notifications)
     .where(
       and(
@@ -21,7 +21,7 @@ export async function getUnreadCount() {
       )
     );
 
-  return result.length;
+  return result.value;
 }
 
 // Get all notifications for current user
@@ -33,7 +33,8 @@ export async function getNotifications() {
     .select()
     .from(notifications)
     .where(eq(notifications.userId, session.user.id))
-    .orderBy(desc(notifications.createdAt));
+    .orderBy(desc(notifications.createdAt))
+    .limit(50);
 }
 
 // Mark a notification as read

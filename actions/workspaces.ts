@@ -28,19 +28,21 @@ export async function createWorkspace(name: string) {
 
   const parsed = z.string().min(1).max(255).parse(name);
 
-  const [workspace] = await db
-    .insert(workspaces)
-    .values({ name: parsed, ownerId: session.user.id })
-    .returning();
+  return await db.transaction(async (tx) => {
+    const [workspace] = await tx
+      .insert(workspaces)
+      .values({ name: parsed, ownerId: session.user.id })
+      .returning();
 
-  await db.insert(workspaceMembers).values({
-    workspaceId: workspace.id,
-    userId: session.user.id,
-    role: 'owner',
+    await tx.insert(workspaceMembers).values({
+      workspaceId: workspace.id,
+      userId: session.user.id,
+      role: 'owner',
+    });
+
+    revalidatePath('/');
+    return workspace;
   });
-
-  revalidatePath('/');
-  return workspace;
 }
 
 // Ensure personal workspace exists (called on first login / page load)
@@ -48,9 +50,13 @@ export async function ensurePersonalWorkspace() {
   const session = await auth();
   if (!session?.user?.id) throw new Error('Unauthorized');
 
-  const existing = await getWorkspaces();
-  if (existing.length > 0) return existing[0];
+  // Check for workspace owned by this user (not just any membership)
+  const [ownedWorkspace] = await db
+    .select()
+    .from(workspaces)
+    .where(eq(workspaces.ownerId, session.user.id));
 
+  if (ownedWorkspace) return ownedWorkspace;
   return createWorkspace('Kişisel Workspace');
 }
 

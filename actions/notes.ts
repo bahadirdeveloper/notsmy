@@ -1,7 +1,7 @@
 'use server';
 
 import { db } from '@/db';
-import { notes } from '@/db/schema';
+import { notes, workspaceMembers } from '@/db/schema';
 import { auth } from '@/auth';
 import { z } from 'zod';
 import { eq, and, between, desc, asc, max } from 'drizzle-orm';
@@ -15,20 +15,44 @@ const NoteSchema = z.object({
   workspaceId: z.string().uuid(),
 });
 
+async function verifyNoteAccess(noteId: string, userId: string) {
+  const [target] = await db
+    .select({ workspaceId: notes.workspaceId })
+    .from(notes)
+    .where(eq(notes.id, noteId));
+  if (!target) throw new Error('Note not found');
+
+  const [membership] = await db
+    .select()
+    .from(workspaceMembers)
+    .where(and(eq(workspaceMembers.workspaceId, target.workspaceId), eq(workspaceMembers.userId, userId)));
+  if (!membership) throw new Error('Forbidden');
+
+  return target;
+}
+
 // Get notes for a date range
 export async function getNotes(workspaceId: string, startDate: string, endDate: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error('Unauthorized');
 
+  // Validate date format
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dateRegex.test(startDate) || !dateRegex.test(endDate)) {
+    throw new Error('Invalid date format');
+  }
+
+  // Verify membership
+  const [membership] = await db
+    .select()
+    .from(workspaceMembers)
+    .where(and(eq(workspaceMembers.workspaceId, workspaceId), eq(workspaceMembers.userId, session.user.id)));
+  if (!membership) throw new Error('Forbidden');
+
   return db
     .select()
     .from(notes)
-    .where(
-      and(
-        eq(notes.workspaceId, workspaceId),
-        between(notes.date, startDate, endDate)
-      )
-    )
+    .where(and(eq(notes.workspaceId, workspaceId), between(notes.date, startDate, endDate)))
     .orderBy(asc(notes.sortOrder), desc(notes.createdAt));
 }
 
@@ -65,11 +89,13 @@ export async function updateNote(id: string, data: Partial<z.infer<typeof NoteSc
   const session = await auth();
   if (!session?.user?.id) throw new Error('Unauthorized');
 
-  // Must explicitly set updatedAt (no DB trigger — see schema comment)
-  // Ownership is verified via workspace membership, not by checking workspaceId on the note
+  await verifyNoteAccess(id, session.user.id);
+
+  const parsed = NoteSchema.partial().parse(data);
+
   const [note] = await db
     .update(notes)
-    .set({ ...data, updatedAt: new Date() })
+    .set({ ...parsed, updatedAt: new Date() })
     .where(eq(notes.id, id))
     .returning();
 
@@ -82,6 +108,8 @@ export async function deleteNote(id: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error('Unauthorized');
 
+  await verifyNoteAccess(id, session.user.id);
+
   await db.delete(notes).where(eq(notes.id, id));
   revalidatePath('/');
 }
@@ -90,6 +118,8 @@ export async function deleteNote(id: string) {
 export async function toggleComplete(id: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error('Unauthorized');
+
+  await verifyNoteAccess(id, session.user.id);
 
   const [current] = await db.select({ isCompleted: notes.isCompleted }).from(notes).where(eq(notes.id, id));
   if (!current) throw new Error('Note not found');
@@ -109,6 +139,8 @@ export async function toggleFavorite(id: string) {
   const session = await auth();
   if (!session?.user?.id) throw new Error('Unauthorized');
 
+  await verifyNoteAccess(id, session.user.id);
+
   const [current] = await db.select({ isFavorite: notes.isFavorite }).from(notes).where(eq(notes.id, id));
   if (!current) throw new Error('Note not found');
 
@@ -126,14 +158,14 @@ export async function toggleFavorite(id: string) {
 export async function reorderNotes(items: { id: string; sortOrder: number }[]) {
   const session = await auth();
   if (!session?.user?.id) throw new Error('Unauthorized');
+  if (items.length === 0) return;
 
-  // Update sort_order for each note in a transaction
+  // Verify access using first item's workspace (all items should be in same workspace)
+  await verifyNoteAccess(items[0].id, session.user.id);
+
   await db.transaction(async (tx) => {
     for (const item of items) {
-      await tx
-        .update(notes)
-        .set({ sortOrder: item.sortOrder, updatedAt: new Date() })
-        .where(eq(notes.id, item.id));
+      await tx.update(notes).set({ sortOrder: item.sortOrder, updatedAt: new Date() }).where(eq(notes.id, item.id));
     }
   });
 
