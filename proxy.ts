@@ -7,7 +7,9 @@ export default auth((req) => {
   const isApiAuth = req.nextUrl.pathname.startsWith('/api/auth');
   const isCron = req.nextUrl.pathname.startsWith('/api/cron');
 
-  if (isApiAuth || isCron) return NextResponse.next();
+  if (isApiAuth) return NextResponse.next();
+  // SECURITY: /api/cron routes bypass auth — cron handlers must validate Authorization header
+  if (isCron) return NextResponse.next();
   if (!isLoggedIn && !isLoginPage) {
     return NextResponse.redirect(new URL('/login', req.url));
   }

@@ -1,5 +1,15 @@
 import { signIn } from '@/auth';
 
+async function signInWithGoogle() {
+  'use server';
+  await signIn('google', { redirectTo: '/' });
+}
+
+async function signInWithGitHub() {
+  'use server';
+  await signIn('github', { redirectTo: '/' });
+}
+
 export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#09090b]">
@@ -16,7 +26,7 @@ export default function LoginPage() {
           <p className="text-[#666] text-sm mb-6">Devam etmek için giriş yapın</p>
 
           {/* Google */}
-          <form action={async () => { 'use server'; await signIn('google', { redirectTo: '/' }); }}>
+          <form action={signInWithGoogle}>
             <button
               type="submit"
               className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-lg border border-white/10 bg-white/[0.04] text-white text-sm hover:bg-white/[0.08] transition-colors mb-3"
@@ -32,7 +42,7 @@ export default function LoginPage() {
           </form>
 
           {/* GitHub */}
-          <form action={async () => { 'use server'; await signIn('github', { redirectTo: '/' }); }}>
+          <form action={signInWithGitHub}>
             <button
               type="submit"
               className="w-full flex items-center justify-center gap-3 px-4 py-2.5 rounded-lg border border-white/10 bg-white/[0.04] text-white text-sm hover:bg-white/[0.08] transition-colors"
