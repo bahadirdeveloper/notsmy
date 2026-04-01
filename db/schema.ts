@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, boolean, integer, timestamp, date, pgEnum, primaryKey } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, boolean, integer, timestamp, date, pgEnum, primaryKey, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // Enums
@@ -9,8 +9,9 @@ export const memberRoleEnum = pgEnum('member_role', ['owner', 'member']);
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: varchar('name', { length: 255 }),
-  email: varchar('email', { length: 255 }).unique(),
+  email: varchar('email', { length: 255 }).unique().notNull(),
   emailVerified: timestamp('email_verified'),
+  // Named 'image' (not 'avatar_url') for @auth/drizzle-adapter compatibility
   image: text('image'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
@@ -28,7 +29,9 @@ export const accounts = pgTable('accounts', {
   scope: text('scope'),
   id_token: text('id_token'),
   session_state: text('session_state'),
-});
+}, (table) => ({
+  pk: primaryKey({ columns: [table.provider, table.providerAccountId] }),
+}));
 
 export const sessions = pgTable('sessions', {
   sessionToken: varchar('session_token', { length: 255 }).primaryKey(),
@@ -40,7 +43,9 @@ export const verificationTokens = pgTable('verification_tokens', {
   identifier: varchar('identifier', { length: 255 }).notNull(),
   token: varchar('token', { length: 255 }).notNull(),
   expires: timestamp('expires').notNull(),
-});
+}, (table) => ({
+  pk: primaryKey({ columns: [table.identifier, table.token] }),
+}));
 
 // workspaces table
 export const workspaces = pgTable('workspaces', {
@@ -74,8 +79,12 @@ export const notes = pgTable('notes', {
   sortOrder: integer('sort_order').default(0).notNull(),
   reminderSent: boolean('reminder_sent').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
+  // Must explicitly set updatedAt: new Date() in every update query — no DB trigger
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => ({
+  workspaceDateIdx: index('notes_workspace_date_idx').on(table.workspaceId, table.date),
+  workspaceIdx: index('notes_workspace_idx').on(table.workspaceId),
+}));
 
 // notifications table
 export const notifications = pgTable('notifications', {
@@ -85,7 +94,9 @@ export const notifications = pgTable('notifications', {
   message: varchar('message', { length: 500 }).notNull(),
   isRead: boolean('is_read').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
-});
+}, (table) => ({
+  userIdx: index('notifications_user_idx').on(table.userId),
+}));
 
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
