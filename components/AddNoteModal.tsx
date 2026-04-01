@@ -1,20 +1,8 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { createNote, updateNote } from '@/actions/notes';
-
-type NoteType = 'task' | 'meeting' | 'idea' | 'note';
-
-interface Note {
-  id: string;
-  title: string;
-  content: string | null;
-  type: NoteType;
-  date: string;
-  isCompleted: boolean;
-  isFavorite: boolean;
-  sortOrder: number;
-}
+import type { Note, NoteType } from '@/types/note';
 
 const TYPE_OPTIONS: { value: NoteType; label: string; icon: string; color: string }[] = [
   { value: 'task',    label: 'Görev',    icon: '▢', color: '#f59e0b' },
@@ -37,6 +25,14 @@ export function AddNoteModal({ workspaceId, defaultDate, editingNote, onClose }:
   const [date, setDate] = useState(editingNote?.date ?? defaultDate);
   const [error, setError] = useState('');
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose();
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -68,10 +64,15 @@ export function AddNoteModal({ workspaceId, defaultDate, editingNote, onClose }:
 
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div className="w-full max-w-md bg-[#111] border border-white/10 rounded-xl shadow-2xl">
+        <div
+          className="w-full max-w-md bg-[#111] border border-white/10 rounded-xl shadow-2xl"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+        >
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
-            <h2 className="text-white font-medium text-sm">
+            <h2 id="modal-title" className="text-white font-medium text-sm">
               {editingNote ? 'Notu Düzenle' : 'Yeni Not'}
             </h2>
             <button onClick={onClose} className="text-white/40 hover:text-white/70 text-lg leading-none">×</button>

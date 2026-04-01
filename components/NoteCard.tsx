@@ -4,19 +4,7 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { toggleComplete, toggleFavorite, deleteNote } from '@/actions/notes';
 import { useState } from 'react';
-
-type NoteType = 'task' | 'meeting' | 'idea' | 'note';
-
-interface Note {
-  id: string;
-  title: string;
-  content: string | null;
-  type: NoteType;
-  date: string;
-  isCompleted: boolean;
-  isFavorite: boolean;
-  sortOrder: number;
-}
+import type { Note, NoteType } from '@/types/note';
 
 const TYPE_CONFIG: Record<NoteType, { icon: string; color: string; label: string }> = {
   task:    { icon: '▢', color: '#f59e0b', label: 'Görev' },
@@ -28,6 +16,7 @@ const TYPE_CONFIG: Record<NoteType, { icon: string; color: string; label: string
 export function NoteCard({ note, onEdit }: { note: Note; onEdit: (note: Note) => void }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
+  const [localCompleted, setLocalCompleted] = useState(note.isCompleted);
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: note.id });
@@ -41,8 +30,15 @@ export function NoteCard({ note, onEdit }: { note: Note; onEdit: (note: Note) =>
   const typeConfig = TYPE_CONFIG[note.type];
 
   async function handleToggleComplete() {
+    setLocalCompleted(!localCompleted); // optimistic
     setIsPending(true);
-    try { await toggleComplete(note.id); } finally { setIsPending(false); }
+    try {
+      await toggleComplete(note.id);
+    } catch {
+      setLocalCompleted(note.isCompleted); // revert on error
+    } finally {
+      setIsPending(false);
+    }
   }
 
   async function handleToggleFavorite() {
@@ -52,8 +48,8 @@ export function NoteCard({ note, onEdit }: { note: Note; onEdit: (note: Note) =>
   async function handleDelete() {
     if (confirm('Bu notu silmek istediğinizden emin misiniz?')) {
       await deleteNote(note.id);
+      setMenuOpen(false);
     }
-    setMenuOpen(false);
   }
 
   return (
@@ -65,7 +61,7 @@ export function NoteCard({ note, onEdit }: { note: Note; onEdit: (note: Note) =>
         note.isFavorite
           ? 'bg-[#10b981]/5 border-[#10b981]/20'
           : 'bg-white/[0.03] border-white/[0.06]',
-        note.isCompleted ? 'opacity-50' : '',
+        localCompleted ? 'opacity-50' : '',
         isPending ? 'opacity-70' : '',
       ].join(' ')}
     >
@@ -107,15 +103,15 @@ export function NoteCard({ note, onEdit }: { note: Note; onEdit: (note: Note) =>
           <button
             onClick={handleToggleComplete}
             className="flex-shrink-0 w-4 h-4 rounded border border-white/20 hover:border-[#10b981]/50 flex items-center justify-center"
-            aria-label={note.isCompleted ? 'Tamamlanmadı olarak işaretle' : 'Tamamlandı olarak işaretle'}
+            aria-label={localCompleted ? 'Tamamlanmadı olarak işaretle' : 'Tamamlandı olarak işaretle'}
           >
-            {note.isCompleted && <span className="text-[#10b981] text-xs">✓</span>}
+            {localCompleted && <span className="text-[#10b981] text-xs">✓</span>}
           </button>
         )}
         <span
           className={[
             'truncate',
-            note.isCompleted ? 'line-through text-white/40' : 'text-white/90',
+            localCompleted ? 'line-through text-white/40' : 'text-white/90',
           ].join(' ')}
         >
           {note.title}

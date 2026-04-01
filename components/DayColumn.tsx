@@ -3,17 +3,7 @@
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { NoteCard } from './NoteCard';
-
-interface Note {
-  id: string;
-  title: string;
-  content: string | null;
-  type: 'task' | 'meeting' | 'idea' | 'note';
-  date: string;
-  isCompleted: boolean;
-  isFavorite: boolean;
-  sortOrder: number;
-}
+import type { Note } from '@/types/note';
 
 interface DayColumnProps {
   date: string; // YYYY-MM-DD

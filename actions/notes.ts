@@ -4,7 +4,7 @@ import { db } from '@/db';
 import { notes, workspaceMembers } from '@/db/schema';
 import { auth } from '@/auth';
 import { z } from 'zod';
-import { eq, and, between, desc, asc, max } from 'drizzle-orm';
+import { eq, and, between, desc, asc, max, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 const NoteSchema = z.object({
@@ -160,8 +160,22 @@ export async function reorderNotes(items: { id: string; sortOrder: number }[]) {
   if (!session?.user?.id) throw new Error('Unauthorized');
   if (items.length === 0) return;
 
-  // Verify access using first item's workspace (all items should be in same workspace)
-  await verifyNoteAccess(items[0].id, session.user.id);
+  // Fetch all note workspaceIds and verify user has access to each
+  const noteIds = items.map((i) => i.id);
+  const noteRows = await db
+    .select({ id: notes.id, workspaceId: notes.workspaceId })
+    .from(notes)
+    .where(inArray(notes.id, noteIds));
+
+  // Verify all notes belong to same workspace and user is a member
+  const workspaceIds = [...new Set(noteRows.map((n) => n.workspaceId))];
+  for (const wsId of workspaceIds) {
+    const [membership] = await db
+      .select()
+      .from(workspaceMembers)
+      .where(and(eq(workspaceMembers.workspaceId, wsId), eq(workspaceMembers.userId, session.user.id)));
+    if (!membership) throw new Error('Forbidden');
+  }
 
   await db.transaction(async (tx) => {
     for (const item of items) {

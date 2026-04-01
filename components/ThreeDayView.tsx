@@ -12,19 +12,9 @@ import {
 } from '@dnd-kit/core';
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { DayColumn } from './DayColumn';
-import { reorderNotes } from '@/actions/notes';
+import { reorderNotes, updateNote } from '@/actions/notes';
 import { AddNoteModal } from './AddNoteModal';
-
-interface Note {
-  id: string;
-  title: string;
-  content: string | null;
-  type: 'task' | 'meeting' | 'idea' | 'note';
-  date: string;
-  isCompleted: boolean;
-  isFavorite: boolean;
-  sortOrder: number;
-}
+import type { Note } from '@/types/note';
 
 interface ThreeDayViewProps {
   initialNotes: Note[];
@@ -67,27 +57,40 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter 
     const activeNote = notes.find((n) => n.id === active.id);
     if (!activeNote) return;
 
-    // Find notes in the same day
+    const overId = String(over.id);
+
+    // Check if dropping on a day column (date string) vs a note
+    const isDropOnDay = days.includes(overId);
+
+    if (isDropOnDay) {
+      // Cross-day move: just update the date, keep sort order
+      const targetDate = overId;
+      if (targetDate === activeNote.date) return;
+
+      setNotes((prev) =>
+        prev.map((n) => (n.id === activeNote.id ? { ...n, date: targetDate } : n))
+      );
+      await updateNote(activeNote.id, { date: targetDate });
+      return;
+    }
+
+    // Same-day reorder
     const dayNotes = notes.filter((n) => n.date === activeNote.date && !n.isCompleted);
     const oldIdx = dayNotes.findIndex((n) => n.id === active.id);
     const newIdx = dayNotes.findIndex((n) => n.id === over.id);
-    if (oldIdx === newIdx) return;
+    if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) return;
 
-    // Reorder
     const reordered = [...dayNotes];
     const [moved] = reordered.splice(oldIdx, 1);
     reordered.splice(newIdx, 0, moved);
 
-    // Assign new sort orders
     const updatedItems = reordered.map((n, i) => ({ ...n, sortOrder: i }));
 
-    // Optimistic update
     setNotes((prev) => {
       const otherNotes = prev.filter((n) => n.date !== activeNote.date || n.isCompleted);
       return [...otherNotes, ...updatedItems];
     });
 
-    // Persist
     await reorderNotes(updatedItems.map((n) => ({ id: n.id, sortOrder: n.sortOrder })));
   }
 
