@@ -27,7 +27,18 @@ export default function RootLayout({
       lang="tr"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        {/* Powered by simay.tech badge */}
+        <a
+          href="https://simay.tech"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-4 left-4 z-50 flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[#10b981]/30 bg-[#10b981]/8 text-[#10b981] text-[11px] font-medium hover:bg-[#10b981]/15 transition-colors"
+        >
+          ⚡ simay.tech
+        </a>
+      </body>
     </html>
   );
 }
