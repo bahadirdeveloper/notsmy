@@ -63,6 +63,13 @@ export async function createNote(data: z.infer<typeof NoteSchema>) {
 
   const parsed = NoteSchema.parse(data);
 
+  // Verify workspace membership
+  const [membership] = await db
+    .select()
+    .from(workspaceMembers)
+    .where(and(eq(workspaceMembers.workspaceId, parsed.workspaceId), eq(workspaceMembers.userId, session.user.id)));
+  if (!membership) throw new Error('Forbidden: not a member of this workspace');
+
   // Get max sort_order for today + 1
   const [maxResult] = await db
     .select({ maxOrder: max(notes.sortOrder) })

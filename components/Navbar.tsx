@@ -1,6 +1,7 @@
 import { auth, signOut } from '@/auth';
 import { getWorkspaces } from '@/actions/workspaces';
-import { getUnreadCount } from '@/actions/notifications';
+import { getUnreadCount, getNotifications } from '@/actions/notifications';
+import { NotificationBell } from '@/components/NotificationBell';
 import Image from 'next/image';
 
 interface NavbarProps {
@@ -9,9 +10,10 @@ interface NavbarProps {
 
 export async function Navbar({ workspaceId }: NavbarProps) {
   const session = await auth();
-  const [allWorkspaces, unreadCount] = await Promise.all([
+  const [allWorkspaces, unreadCount, notifs] = await Promise.all([
     getWorkspaces(),
     getUnreadCount(),
+    getNotifications(),
   ]);
   const currentWorkspace = allWorkspaces.find((w) => w.id === workspaceId) ?? allWorkspaces[0];
 
@@ -20,10 +22,28 @@ export async function Navbar({ workspaceId }: NavbarProps) {
       {/* Left: Logo + Workspace */}
       <div className="flex items-center gap-3">
         <span className="text-[#10b981] font-semibold text-lg">📋 Notsmy</span>
-        {currentWorkspace && (
+        {(allWorkspaces.length > 0) && (
           <>
             <span className="text-white/20">|</span>
-            <span className="text-white/50 text-sm">{currentWorkspace.name}</span>
+            {allWorkspaces.length > 1 ? (
+              <div className="flex items-center gap-1">
+                {allWorkspaces.map((w) => (
+                  <a
+                    key={w.id}
+                    href={`/?workspace=${w.id}`}
+                    className={`text-xs px-2 py-1 rounded transition-colors ${
+                      w.id === workspaceId
+                        ? 'text-[#10b981] bg-[#10b981]/10'
+                        : 'text-white/40 hover:text-white/70'
+                    }`}
+                  >
+                    {w.name}
+                  </a>
+                ))}
+              </div>
+            ) : currentWorkspace ? (
+              <span className="text-white/50 text-sm">{currentWorkspace.name}</span>
+            ) : null}
           </>
         )}
       </div>
@@ -31,16 +51,7 @@ export async function Navbar({ workspaceId }: NavbarProps) {
       {/* Right: Notifications + User */}
       <div className="flex items-center gap-3">
         {/* Notification bell */}
-        <div className="relative">
-          <button className="text-white/40 hover:text-white/70 text-base p-1">
-            🔔
-          </button>
-          {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 bg-[#10b981] text-black text-[9px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
-        </div>
+        <NotificationBell unreadCount={unreadCount} notifications={notifs} />
 
         {/* User avatar + sign out */}
         {session?.user && (

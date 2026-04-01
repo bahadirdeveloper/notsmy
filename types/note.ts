@@ -2,6 +2,7 @@ export type NoteType = 'task' | 'meeting' | 'idea' | 'note';
 
 export interface Note {
   id: string;
+  workspaceId: string;
   title: string;
   content: string | null;
   type: NoteType;
