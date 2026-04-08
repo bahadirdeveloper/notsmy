@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   DndContext,
@@ -15,7 +15,7 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { DayColumn } from './DayColumn';
 import { FilterBar } from './FilterBar';
-import { reorderNotes, updateNote, toggleComplete, createNote as serverCreateNote } from '@/actions/notes';
+import { reorderNotes, updateNote, toggleComplete, restoreNote } from '@/actions/notes';
 import { AddNoteModal } from './AddNoteModal';
 import { useToast } from './Toast';
 import type { Note } from '@/types/note';
@@ -56,7 +56,10 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
   }, [initialNotes]);
 
   const today = todays();
-  const days = [startDate, addDays(startDate, 1), addDays(startDate, 2)];
+  const days = useMemo(
+    () => [startDate, addDays(startDate, 1), addDays(startDate, 2)],
+    [startDate]
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -166,14 +169,23 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
     if (deletedNote) {
       const noteToRestore = deletedNote;
       showToast('Not silindi', () => {
-        // Undo: re-create on server
+        // Undo: restore with the original UUID so client/server stay in sync
         setNotes((prev) => [...prev, noteToRestore]);
-        serverCreateNote({
+        restoreNote({
+          id: noteToRestore.id,
+          workspaceId: noteToRestore.workspaceId,
           title: noteToRestore.title,
-          content: noteToRestore.content ?? undefined,
+          content: noteToRestore.content,
           type: noteToRestore.type,
           date: noteToRestore.date,
-          workspaceId: noteToRestore.workspaceId,
+          isCompleted: noteToRestore.isCompleted,
+          isFavorite: noteToRestore.isFavorite,
+          sortOrder: noteToRestore.sortOrder,
+        }).catch((err) => {
+          console.error('Failed to restore note', err);
+          // Roll back the optimistic restore
+          setNotes((prev) => prev.filter((n) => n.id !== noteToRestore.id));
+          showToast('Geri alma başarısız');
         });
       });
     }

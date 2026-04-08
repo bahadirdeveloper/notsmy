@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { markAllAsRead } from '@/actions/notifications';
 
 interface Notification {
@@ -17,11 +18,16 @@ interface Props {
 }
 
 export function NotificationBell({ unreadCount, notifications }: Props) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
-  async function handleMarkAllRead() {
-    await markAllAsRead();
-    setOpen(false);
+  function handleMarkAllRead() {
+    startTransition(async () => {
+      await markAllAsRead();
+      router.refresh();
+      setOpen(false);
+    });
   }
 
   return (
@@ -47,7 +53,11 @@ export function NotificationBell({ unreadCount, notifications }: Props) {
             <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
               <span className="text-white/60 text-xs font-medium">Bildirimler</span>
               {unreadCount > 0 && (
-                <button onClick={handleMarkAllRead} className="text-[#10b981] text-[10px] hover:underline font-medium">
+                <button
+                  onClick={handleMarkAllRead}
+                  disabled={isPending}
+                  className="text-[#10b981] text-[10px] hover:underline font-medium disabled:opacity-50"
+                >
                   Tümünü okundu işaretle
                 </button>
               )}

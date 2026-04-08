@@ -19,9 +19,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     session({ session, user }) {
-      // Add user.id to session
-      session.user.id = user.id;
-      return session;
+      // Return a fresh object so we don't mutate a possibly-frozen session
+      return {
+        ...session,
+        user: { ...session.user, id: user.id },
+      };
     },
     // NOTE: isNewUser is not available in the signIn callback in NextAuth v5 beta.30.
     // Automatic workspace creation on first login is handled in the main app page

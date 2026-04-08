@@ -1,7 +1,8 @@
-const CACHE_NAME = 'notsmy-v1';
+// Bump this when sw logic changes so old caches get cleaned up.
+const CACHE_NAME = 'notsmy-v2';
+// Only precache truly static, auth-independent assets.
+// Pages like /, /login, /landing depend on session and must NOT be precached.
 const STATIC_ASSETS = [
-  '/',
-  '/login',
   '/manifest.json',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
@@ -48,16 +49,11 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Pages: network-first with cache fallback
-  event.respondWith(
-    fetch(request)
-      .then((res) => {
-        const clone = res.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-        return res;
-      })
-      .catch(() => caches.match(request))
-  );
+  // Pages (HTML / RSC): network-only. Caching auth-dependent HTML can leak
+  // another user's view or show stale "logged out" pages after sign in.
+  // Falling back to cached HTML on offline is acceptable only if we strip
+  // auth-sensitive routes — for now keep it simple and let the browser handle
+  // its own offline error.
 });
 
 // Push notification support

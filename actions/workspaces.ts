@@ -43,7 +43,10 @@ export async function createWorkspace(name: string) {
   return workspace;
 }
 
-// Ensure personal workspace exists (called on first login / page load)
+// Ensure personal workspace exists (called on first login / page load).
+// Two concurrent first-page-load requests for a brand-new user could race
+// here and both try to create the workspace. We re-check after a failed
+// create to recover gracefully instead of throwing.
 export async function ensurePersonalWorkspace() {
   const session = await auth();
   if (!session?.user?.id) throw new Error('Unauthorized');
@@ -55,7 +58,18 @@ export async function ensurePersonalWorkspace() {
     .where(eq(workspaces.ownerId, session.user.id));
 
   if (ownedWorkspace) return ownedWorkspace;
-  return createWorkspace('Kişisel Workspace');
+
+  try {
+    return await createWorkspace('Kişisel Workspace');
+  } catch (err) {
+    // If a parallel request created it first, fall back to the existing one
+    const [existing] = await db
+      .select()
+      .from(workspaces)
+      .where(eq(workspaces.ownerId, session.user.id));
+    if (existing) return existing;
+    throw err;
+  }
 }
 
 // Invite a member to a workspace by email

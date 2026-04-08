@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { notes, notifications, workspaceMembers } from '@/db/schema';
-import { and, eq, lt } from 'drizzle-orm';
+import { and, eq, lt, inArray } from 'drizzle-orm';
 
 export async function GET(request: NextRequest) {
   // Verify this is called by Vercel Cron (or manually with the secret)
@@ -9,8 +9,8 @@ export async function GET(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
 
   if (!cronSecret) {
-    // CRON_SECRET must be set in production
-    return NextResponse.json({ error: 'Server misconfiguration: CRON_SECRET not set' }, { status: 500 });
+    console.error('[cron/reminders] CRON_SECRET is not set');
+    return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
   }
 
   if (authHeader !== `Bearer ${cronSecret}`) {
@@ -18,66 +18,88 @@ export async function GET(request: NextRequest) {
   }
 
   const now = new Date();
-  const today = now.toISOString().split('T')[0]; // YYYY-MM-DD
+  const today = now.toISOString().split('T')[0]; // YYYY-MM-DD (UTC)
   // Find today's tasks: not completed, reminder not sent,
   // and created more than 20 hours ago (within 24h window = give 4h warning)
   const twentyHoursAgo = new Date(now.getTime() - 20 * 60 * 60 * 1000);
 
-  const overdueNotes = await db
-    .select({
-      id: notes.id,
-      title: notes.title,
-      workspaceId: notes.workspaceId,
-      createdAt: notes.createdAt,
-    })
-    .from(notes)
-    .where(
-      and(
-        eq(notes.type, 'task'),
-        eq(notes.date, today),
-        eq(notes.isCompleted, false),
-        eq(notes.reminderSent, false),
-        lt(notes.createdAt, twentyHoursAgo)
-      )
-    );
+  try {
+    const overdueNotes = await db
+      .select({
+        id: notes.id,
+        title: notes.title,
+        workspaceId: notes.workspaceId,
+      })
+      .from(notes)
+      .where(
+        and(
+          eq(notes.type, 'task'),
+          eq(notes.date, today),
+          eq(notes.isCompleted, false),
+          eq(notes.reminderSent, false),
+          lt(notes.createdAt, twentyHoursAgo)
+        )
+      );
 
-  if (overdueNotes.length === 0) {
-    return NextResponse.json({ processed: 0, message: 'No reminders needed' });
-  }
+    if (overdueNotes.length === 0) {
+      return NextResponse.json({ processed: 0, message: 'No reminders needed' });
+    }
 
-  let processed = 0;
-
-  for (const note of overdueNotes) {
-    // Get all members of this workspace to notify
-    const members = await db
-      .select({ userId: workspaceMembers.userId })
+    // Fetch ALL members for the affected workspaces in one query
+    const workspaceIds = [...new Set(overdueNotes.map((n) => n.workspaceId))];
+    const membershipRows = await db
+      .select({
+        workspaceId: workspaceMembers.workspaceId,
+        userId: workspaceMembers.userId,
+      })
       .from(workspaceMembers)
-      .where(eq(workspaceMembers.workspaceId, note.workspaceId));
+      .where(inArray(workspaceMembers.workspaceId, workspaceIds));
 
-    // Create notifications for each member
-    if (members.length > 0) {
-      await db.insert(notifications).values(
-        members.map((m) => ({
-          userId: m.userId,
+    // Group members by workspaceId for fast lookup
+    const membersByWorkspace = new Map<string, string[]>();
+    for (const row of membershipRows) {
+      const list = membersByWorkspace.get(row.workspaceId) ?? [];
+      list.push(row.userId);
+      membersByWorkspace.set(row.workspaceId, list);
+    }
+
+    // Build all notification rows in memory
+    const notificationRows: { userId: string; noteId: string; message: string; isRead: boolean }[] = [];
+    for (const note of overdueNotes) {
+      const members = membersByWorkspace.get(note.workspaceId) ?? [];
+      for (const userId of members) {
+        notificationRows.push({
+          userId,
           noteId: note.id,
           message: `"${note.title}" görevi tamamlanmadı — son 4 saatiniz!`,
           isRead: false,
-        }))
-      );
+        });
+      }
     }
 
-    // Mark reminder as sent
-    await db
-      .update(notes)
-      .set({ reminderSent: true })
-      .where(eq(notes.id, note.id));
+    // Insert notifications + mark reminders as sent in a single batch
+    const noteIds = overdueNotes.map((n) => n.id);
+    if (notificationRows.length > 0) {
+      await db.batch([
+        db.insert(notifications).values(notificationRows),
+        db.update(notes).set({ reminderSent: true }).where(inArray(notes.id, noteIds)),
+      ]);
+    } else {
+      // Still mark reminder as sent so we don't reprocess them next hour
+      await db.update(notes).set({ reminderSent: true }).where(inArray(notes.id, noteIds));
+    }
 
-    processed++;
+    return NextResponse.json({
+      processed: overdueNotes.length,
+      notifications: notificationRows.length,
+      message: `${overdueNotes.length} hatırlatma gönderildi`,
+      timestamp: now.toISOString(),
+    });
+  } catch (err) {
+    console.error('[cron/reminders] failed:', err);
+    return NextResponse.json(
+      { error: 'Internal error', message: err instanceof Error ? err.message : 'unknown' },
+      { status: 500 }
+    );
   }
-
-  return NextResponse.json({
-    processed,
-    message: `${processed} hatırlatma gönderildi`,
-    timestamp: now.toISOString(),
-  });
 }

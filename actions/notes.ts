@@ -121,6 +121,58 @@ export async function deleteNote(id: string) {
   revalidatePath('/');
 }
 
+// Restore a deleted note (used by Toast undo). Re-uses the original UUID so
+// the optimistic UI stays in sync without needing to swap IDs.
+const RestoreSchema = z.object({
+  id: z.string().uuid(),
+  workspaceId: z.string().uuid(),
+  title: z.string().min(1).max(500),
+  content: z.string().nullable().optional(),
+  type: z.enum(['task', 'meeting', 'idea', 'note']),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  isCompleted: z.boolean().optional(),
+  isFavorite: z.boolean().optional(),
+  sortOrder: z.number().int().optional(),
+});
+
+export async function restoreNote(data: z.infer<typeof RestoreSchema>) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error('Unauthorized');
+
+  const parsed = RestoreSchema.parse(data);
+
+  // Verify workspace membership
+  const [membership] = await db
+    .select()
+    .from(workspaceMembers)
+    .where(
+      and(
+        eq(workspaceMembers.workspaceId, parsed.workspaceId),
+        eq(workspaceMembers.userId, session.user.id)
+      )
+    );
+  if (!membership) throw new Error('Forbidden: not a member of this workspace');
+
+  const [note] = await db
+    .insert(notes)
+    .values({
+      id: parsed.id,
+      workspaceId: parsed.workspaceId,
+      title: parsed.title,
+      content: parsed.content ?? null,
+      type: parsed.type,
+      date: parsed.date,
+      isCompleted: parsed.isCompleted ?? false,
+      isFavorite: parsed.isFavorite ?? false,
+      sortOrder: parsed.sortOrder ?? 0,
+      createdBy: session.user.id,
+    })
+    .returning();
+
+  revalidatePath('/');
+  return note;
+}
+
 // Toggle completed status
 export async function toggleComplete(id: string) {
   const session = await auth();
@@ -174,18 +226,45 @@ export async function reorderNotes(items: { id: string; sortOrder: number }[]) {
     .from(notes)
     .where(inArray(notes.id, noteIds));
 
-  // Verify all notes belong to same workspace and user is a member
-  const workspaceIds = [...new Set(noteRows.map((n) => n.workspaceId))];
-  for (const wsId of workspaceIds) {
-    const [membership] = await db
-      .select()
-      .from(workspaceMembers)
-      .where(and(eq(workspaceMembers.workspaceId, wsId), eq(workspaceMembers.userId, session.user.id)));
-    if (!membership) throw new Error('Forbidden');
+  // Make sure every requested note actually exists and belongs to a workspace
+  // the caller is a member of. We verify membership for the union of workspaces
+  // referenced by these notes — typically one.
+  if (noteRows.length !== noteIds.length) {
+    throw new Error('Some notes were not found');
   }
 
-  for (const item of items) {
-    await db.update(notes).set({ sortOrder: item.sortOrder, updatedAt: new Date() }).where(eq(notes.id, item.id));
+  const workspaceIds = [...new Set(noteRows.map((n) => n.workspaceId))];
+  const memberships = await db
+    .select({ workspaceId: workspaceMembers.workspaceId })
+    .from(workspaceMembers)
+    .where(
+      and(
+        inArray(workspaceMembers.workspaceId, workspaceIds),
+        eq(workspaceMembers.userId, session.user.id)
+      )
+    );
+  if (memberships.length !== workspaceIds.length) {
+    throw new Error('Forbidden');
+  }
+
+  // Apply all updates atomically. The neon-http driver does not support the
+  // transaction() callback API, but db.batch() sends every statement to Neon
+  // in a single HTTP round-trip wrapped in a transaction on the server side.
+  const now = new Date();
+  if (items.length === 1) {
+    const [item] = items;
+    await db
+      .update(notes)
+      .set({ sortOrder: item.sortOrder, updatedAt: now })
+      .where(eq(notes.id, item.id));
+  } else {
+    const [first, ...rest] = items;
+    await db.batch([
+      db.update(notes).set({ sortOrder: first.sortOrder, updatedAt: now }).where(eq(notes.id, first.id)),
+      ...rest.map((item) =>
+        db.update(notes).set({ sortOrder: item.sortOrder, updatedAt: now }).where(eq(notes.id, item.id))
+      ),
+    ]);
   }
 
   revalidatePath('/');

@@ -90,6 +90,7 @@ export function AddNoteModal({ workspaceId, defaultDate, editingNote, onClose, o
           </div>
 
           <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
+            <fieldset disabled={isPending} className="contents">
             {/* Type selector */}
             <div className="flex gap-2">
               {TYPE_OPTIONS.map((t) => (
@@ -98,7 +99,7 @@ export function AddNoteModal({ workspaceId, defaultDate, editingNote, onClose, o
                   type="button"
                   onClick={() => setType(t.value)}
                   className={[
-                    'flex-1 flex flex-col items-center gap-1.5 py-2.5 rounded-xl border text-xs transition-all duration-200',
+                    'flex-1 flex flex-col items-center gap-1.5 py-2.5 rounded-xl border text-xs transition-all duration-200 disabled:opacity-50',
                     type === t.value
                       ? 'scale-[1.02] shadow-lg'
                       : 'border-white/[0.06] bg-white/[0.02] text-white/35 hover:border-white/[0.12] hover:bg-white/[0.04]',
@@ -122,8 +123,9 @@ export function AddNoteModal({ workspaceId, defaultDate, editingNote, onClose, o
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Başlık..."
+              maxLength={500}
               autoFocus
-              className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#10b981]/40 focus:bg-white/[0.04] transition-all"
+              className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#10b981]/40 focus:bg-white/[0.04] transition-all disabled:opacity-50"
             />
 
             {/* Content */}
@@ -132,7 +134,7 @@ export function AddNoteModal({ workspaceId, defaultDate, editingNote, onClose, o
               onChange={(e) => setContent(e.target.value)}
               placeholder="Detay (opsiyonel)..."
               rows={3}
-              className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#10b981]/40 focus:bg-white/[0.04] resize-none transition-all"
+              className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#10b981]/40 focus:bg-white/[0.04] resize-none transition-all disabled:opacity-50"
             />
 
             {/* Date */}
@@ -140,12 +142,15 @@ export function AddNoteModal({ workspaceId, defaultDate, editingNote, onClose, o
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#10b981]/40 focus:bg-white/[0.04] transition-all"
+              min="2020-01-01"
+              max="2099-12-31"
+              className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#10b981]/40 focus:bg-white/[0.04] transition-all disabled:opacity-50"
             />
 
             {error && (
               <p className="text-red-400 text-xs bg-red-400/10 px-3 py-2 rounded-lg">{error}</p>
             )}
+            </fieldset>
 
             {/* Actions */}
             <div className="flex gap-2 justify-end pt-1">
