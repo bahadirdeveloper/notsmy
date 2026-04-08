@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   DndContext,
   closestCenter,
@@ -40,6 +41,7 @@ function todays(): string {
 }
 
 export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter: initialFilter }: ThreeDayViewProps) {
+  const router = useRouter();
   const [notes, setNotes] = useState(initialNotes);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -47,6 +49,11 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
   const [searchQuery, setSearchQuery] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
   const { showToast } = useToast();
+
+  // Sync local state with fresh server data after RSC refresh (revalidatePath, navigation)
+  useEffect(() => {
+    setNotes(initialNotes);
+  }, [initialNotes]);
 
   const today = todays();
   const days = [startDate, addDays(startDate, 1), addDays(startDate, 2)];
@@ -101,9 +108,35 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
   }, []);
 
   const handleNoteCreated = useCallback((note: Note) => {
-    setNotes((prev) => [...prev, note]);
-    showToast('Not eklendi');
-  }, [showToast]);
+    // If the created note is within the current 3-day view, show it optimistically.
+    // Otherwise, navigate to the view containing its date so the user can see it.
+    if (days.includes(note.date)) {
+      setNotes((prev) => [...prev, note]);
+      showToast('Not eklendi');
+      return;
+    }
+
+    // Compute offset so note.date lands on day 1 of the new view
+    const t = todays();
+    const [ty, tm, td] = t.split('-').map(Number);
+    const [ny, nm, nd] = note.date.split('-').map(Number);
+    const msPerDay = 86400000;
+    const diffDays = Math.round(
+      (Date.UTC(ny, nm - 1, nd) - Date.UTC(ty, tm - 1, td)) / msPerDay
+    );
+
+    // Format date for toast (Turkish short form)
+    const label = new Date(note.date + 'T00:00:00').toLocaleDateString('tr-TR', {
+      day: 'numeric',
+      month: 'long',
+    });
+    showToast(`Not ${label} tarihine eklendi`);
+
+    // Navigate to the view starting on the note's date
+    const target = diffDays === 0 ? '/' : `/?offset=${diffDays}`;
+    router.push(target);
+    router.refresh();
+  }, [days, router, showToast]);
 
   const handleNoteUpdated = useCallback((note: Note) => {
     setNotes((prev) => prev.map((n) => (n.id === note.id ? note : n)));

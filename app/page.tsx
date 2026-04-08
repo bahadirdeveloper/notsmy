@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { auth } from '@/auth';
 import { getNotes } from '@/actions/notes';
 import { ensurePersonalWorkspace } from '@/actions/workspaces';
@@ -38,7 +39,7 @@ export default async function Page({ searchParams }: PageProps) {
         {/* Navigation */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
-            <a
+            <Link
               href={offset === 0 ? '/' : `/?offset=0`}
               className={`text-xs px-3 py-1.5 rounded-lg transition-all ${
                 offset === 0
@@ -47,28 +48,28 @@ export default async function Page({ searchParams }: PageProps) {
               }`}
             >
               Bugün
-            </a>
+            </Link>
           </div>
           <div className="flex items-center gap-1 text-sm">
-            <a
+            <Link
               href={`/?offset=${offset - 3}`}
               className="w-8 h-8 rounded-lg flex items-center justify-center text-white/25 hover:text-white/60 hover:bg-white/[0.04] transition-all"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="15 18 9 12 15 6"/>
               </svg>
-            </a>
+            </Link>
             <span className="text-white/25 text-xs min-w-[60px] text-center tabular-nums">
               {offset === 0 ? '' : `${offset > 0 ? '+' : ''}${offset} gün`}
             </span>
-            <a
+            <Link
               href={`/?offset=${offset + 3}`}
               className="w-8 h-8 rounded-lg flex items-center justify-center text-white/25 hover:text-white/60 hover:bg-white/[0.04] transition-all"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="9 18 15 12 9 6"/>
               </svg>
-            </a>
+            </Link>
           </div>
         </div>
 
