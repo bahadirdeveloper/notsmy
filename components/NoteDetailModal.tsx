@@ -107,19 +107,19 @@ export function NoteDetailModal({
         aria-hidden="true"
       />
 
-      {/* Modal — bottom sheet on mobile, centered card on desktop */}
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 pointer-events-none">
+      {/* Modal — drops from the top on mobile (matches AddNoteModal so the
+          mental model is the same), centered on desktop. */}
+      <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center sm:p-4 pointer-events-none">
         <div
-          className="w-full sm:max-w-lg bg-[#15161d] border border-white/[0.1] rounded-t-3xl sm:rounded-2xl shadow-2xl shadow-black/60 animate-slide-up max-h-[92vh] overflow-y-auto pointer-events-auto"
-          style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+          className="w-full sm:max-w-lg bg-[#15161d] border border-white/[0.1] sm:border rounded-b-3xl sm:rounded-2xl shadow-2xl shadow-black/60 animate-slide-down sm:animate-slide-up max-h-[100dvh] overflow-y-auto pointer-events-auto"
+          style={{
+            paddingTop: 'env(safe-area-inset-top, 0px)',
+            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          }}
           role="dialog"
           aria-modal="true"
           aria-labelledby="detail-title"
         >
-          {/* Mobile drag handle */}
-          <div className="sm:hidden flex justify-center pt-3 pb-1">
-            <div className="w-10 h-1 rounded-full bg-white/25" />
-          </div>
 
           {/* Header: type badge + close */}
           <div className="flex items-center justify-between px-5 pt-4 sm:pt-5 pb-3">

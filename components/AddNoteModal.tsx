@@ -66,19 +66,19 @@ export function AddNoteModal({ workspaceId, defaultDate, editingNote, onClose, o
       {/* Backdrop */}
       <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={onClose} />
 
-      {/* Modal — bottom sheet on mobile, centered card on desktop */}
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4">
+      {/* Modal — drops from the top on mobile so the on-screen keyboard
+          doesn't overlap the inputs. Stays centered on desktop. */}
+      <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center sm:p-4">
         <div
-          className="w-full sm:max-w-md bg-[#15161d] border border-white/[0.1] rounded-t-3xl sm:rounded-2xl shadow-2xl shadow-black/60 animate-slide-up max-h-[92vh] overflow-y-auto"
-          style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+          className="w-full sm:max-w-md bg-[#15161d] border border-white/[0.1] sm:border rounded-b-3xl sm:rounded-2xl shadow-2xl shadow-black/60 animate-slide-down sm:animate-slide-up max-h-[100dvh] overflow-y-auto"
+          style={{
+            paddingTop: 'env(safe-area-inset-top, 0px)',
+            paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          }}
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-title"
         >
-          {/* Mobile drag handle */}
-          <div className="sm:hidden flex justify-center pt-3 pb-1">
-            <div className="w-10 h-1 rounded-full bg-white/25" />
-          </div>
 
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-3.5 sm:py-4 border-b border-white/[0.08]">
