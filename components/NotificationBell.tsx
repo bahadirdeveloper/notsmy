@@ -34,7 +34,7 @@ export function NotificationBell({ unreadCount, notifications }: Props) {
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="w-8 h-8 rounded-lg flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-all relative"
+        className="w-9 h-9 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-white/55 hover:text-white/85 hover:bg-white/[0.06] transition-all relative"
         aria-label={`Bildirimler${unreadCount > 0 ? ` (${unreadCount} okunmamış)` : ''}`}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -49,9 +49,9 @@ export function NotificationBell({ unreadCount, notifications }: Props) {
       {open && (
         <>
           <div className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-10 z-40 w-72 bg-[#161618] border border-white/[0.08] rounded-xl shadow-2xl shadow-black/50 overflow-hidden animate-slide-down">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
-              <span className="text-white/60 text-xs font-medium">Bildirimler</span>
+          <div className="absolute right-0 top-10 z-40 w-72 bg-[#15161d] border border-white/[0.1] rounded-xl shadow-2xl shadow-black/60 overflow-hidden animate-slide-down">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.08]">
+              <span className="text-white/85 text-xs font-medium">Bildirimler</span>
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllRead}
@@ -65,15 +65,15 @@ export function NotificationBell({ unreadCount, notifications }: Props) {
             <div className="max-h-64 overflow-y-auto">
               {notifications.length === 0 ? (
                 <div className="px-4 py-8 text-center flex flex-col items-center gap-2">
-                  <span className="text-white/10 text-2xl">🔔</span>
-                  <span className="text-white/20 text-xs">Bildirim yok</span>
+                  <span className="text-white/30 text-2xl">🔔</span>
+                  <span className="text-white/45 text-xs">Bildirim yok</span>
                 </div>
               ) : (
                 notifications.slice(0, 10).map((n) => (
                   <div
                     key={n.id}
-                    className={`px-4 py-3 border-b border-white/[0.03] text-xs transition-colors hover:bg-white/[0.02] ${
-                      n.isRead ? 'text-white/25' : 'text-white/60'
+                    className={`px-4 py-3 border-b border-white/[0.06] text-xs transition-colors hover:bg-white/[0.04] ${
+                      n.isRead ? 'text-white/45' : 'text-white/85'
                     }`}
                   >
                     <div className="flex items-start gap-2">

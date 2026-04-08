@@ -36,21 +36,21 @@ export function DayColumn({ date, isToday, notes, typeFilter, onEdit, onOpenDeta
   const weekday = d.toLocaleDateString('tr-TR', { weekday: 'short' }).toUpperCase();
 
   return (
-    <div className={`border-b border-white/[0.04] last:border-b-0 transition-colors ${isToday ? 'bg-[#10b981]/[0.02]' : ''}`}>
+    <div className={`border-b border-white/[0.07] last:border-b-0 transition-colors ${isToday ? 'bg-[#10b981]/[0.035]' : ''}`}>
       {/* Day header */}
       <div className="flex items-center gap-3 px-4 py-3.5">
-        <div className={`flex flex-col items-center min-w-[40px] ${isToday ? 'text-[#10b981]' : 'text-white/30'}`}>
+        <div className={`flex flex-col items-center min-w-[40px] ${isToday ? 'text-[#10b981]' : 'text-white/55'}`}>
           <span className="text-[11px] font-semibold leading-none tracking-wide">{weekday}</span>
-          <span className={`text-xl font-bold leading-tight mt-0.5 tabular-nums ${isToday ? '' : 'text-white/55'}`}>{dayNum}</span>
+          <span className={`text-xl font-bold leading-tight mt-0.5 tabular-nums ${isToday ? '' : 'text-white/85'}`}>{dayNum}</span>
         </div>
 
         {isToday && (
-          <span className="bg-[#10b981] text-black text-[10px] font-bold px-2 py-1 rounded-full tracking-wider">
+          <span className="bg-[#10b981] text-black text-[10px] font-bold px-2 py-1 rounded-full tracking-wider shadow-md shadow-[#10b981]/25">
             BUGÜN
           </span>
         )}
 
-        <span className="ml-auto text-white/25 text-xs tabular-nums">
+        <span className="ml-auto text-white/45 text-xs tabular-nums">
           {filtered.length > 0 ? `${filtered.length} öğe` : ''}
         </span>
       </div>
@@ -60,10 +60,10 @@ export function DayColumn({ date, isToday, notes, typeFilter, onEdit, onOpenDeta
         <div ref={setNodeRef} className="px-3 sm:px-4 pb-3 flex flex-col gap-2 sm:gap-1.5 min-h-[52px]">
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-5 gap-1.5">
-              <span className="text-white/10 text-2xl">
+              <span className="text-white/25 text-2xl">
                 {isToday ? '🌟' : '📭'}
               </span>
-              <span className="text-white/20 text-xs">
+              <span className="text-white/40 text-xs">
                 {isToday ? 'Bugüne bir not ekle' : 'Henüz not yok'}
               </span>
             </div>

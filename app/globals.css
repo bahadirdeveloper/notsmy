@@ -1,8 +1,17 @@
 @import "tailwindcss";
 
 :root {
-  --background: #09090b;
-  --foreground: #f1f5f9;
+  /* Softer neutral-dark instead of pure black — easier on the eyes */
+  --background: #0b0c10;
+  --surface-1: #111218;
+  --surface-2: #15161d;
+  --foreground: #f5f7fb;
+
+  /* Text tiers — brighter than the previous very-dim whites */
+  --text-primary: rgba(255, 255, 255, 0.96);
+  --text-secondary: rgba(255, 255, 255, 0.72);
+  --text-muted: rgba(255, 255, 255, 0.52);
+  --text-subtle: rgba(255, 255, 255, 0.36);
 }
 
 @theme inline {
@@ -13,9 +22,10 @@
 
   /* Brand colors */
   --color-brand-primary: #10b981;
-  --color-brand-bg: #09090b;
-  --color-brand-card: rgba(255,255,255,0.03);
-  --color-brand-border: rgba(255,255,255,0.06);
+  --color-brand-bg: #0b0c10;
+  --color-brand-surface: #111218;
+  --color-brand-card: rgba(255,255,255,0.045);
+  --color-brand-border: rgba(255,255,255,0.09);
 
   /* Note type colors */
   --color-note-task: #f59e0b;
@@ -25,9 +35,18 @@
 }
 
 body {
-  background-color: #09090b;
-  color: #f1f5f9;
+  background-color: #0b0c10;
+  /* Subtle layered gradient: a touch of emerald glow at the top, a cool
+     blue-black at the bottom. Prevents the "pure black sheet" feeling
+     without looking gamey. */
+  background-image:
+    radial-gradient(ellipse 120% 60% at 50% -10%, rgba(16, 185, 129, 0.06), transparent 70%),
+    radial-gradient(ellipse 100% 80% at 50% 110%, rgba(30, 32, 48, 0.8), transparent 60%);
+  background-attachment: fixed;
+  color: var(--foreground);
   font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Custom scrollbar */
@@ -38,11 +57,11 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.12);
   border-radius: 100px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.22);
 }
 
 /* Animations */

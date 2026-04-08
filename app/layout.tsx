@@ -84,7 +84,7 @@ export default function RootLayout({
           href="https://simay.tech"
           target="_blank"
           rel="noopener noreferrer"
-          className="fixed bottom-4 left-4 z-50 flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[#10b981]/30 bg-[#09090b]/80 backdrop-blur-sm text-[#10b981] text-[10px] font-medium hover:bg-[#10b981]/15 transition-colors"
+          className="fixed bottom-4 left-4 z-50 flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[#10b981]/35 bg-[#0b0c10]/85 backdrop-blur-sm text-[#10b981] text-[10px] font-medium hover:bg-[#10b981]/15 transition-colors"
         >
           simay.tech
         </a>

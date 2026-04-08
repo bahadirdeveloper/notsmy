@@ -20,7 +20,7 @@ export async function Navbar({ workspaceId }: NavbarProps) {
 
   return (
     <nav
-      className="sticky top-0 z-20 flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/[0.06] bg-[#09090b]/80 backdrop-blur-xl"
+      className="sticky top-0 z-20 flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/[0.08] bg-[#0b0c10]/85 backdrop-blur-xl"
       style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top, 0px))' }}
     >
       {/* Left: Logo + Workspace */}
@@ -34,7 +34,7 @@ export async function Navbar({ workspaceId }: NavbarProps) {
 
         {allWorkspaces.length > 0 && (
           <>
-            <div className="w-px h-5 bg-white/[0.08]" />
+            <div className="w-px h-5 bg-white/[0.12]" />
             {allWorkspaces.length > 1 ? (
               <div className="flex items-center gap-1">
                 {allWorkspaces.map((w) => (
@@ -43,8 +43,8 @@ export async function Navbar({ workspaceId }: NavbarProps) {
                     href={`/?workspace=${w.id}`}
                     className={`text-xs px-2.5 py-1 rounded-md transition-all ${
                       w.id === workspaceId
-                        ? 'text-[#10b981] bg-[#10b981]/10 font-medium'
-                        : 'text-white/35 hover:text-white/60 hover:bg-white/[0.04]'
+                        ? 'text-[#10b981] bg-[#10b981]/15 font-medium'
+                        : 'text-white/55 hover:text-white/85 hover:bg-white/[0.06]'
                     }`}
                   >
                     {w.name}
@@ -52,7 +52,7 @@ export async function Navbar({ workspaceId }: NavbarProps) {
                 ))}
               </div>
             ) : currentWorkspace ? (
-              <span className="text-white/40 text-xs font-medium">{currentWorkspace.name}</span>
+              <span className="text-white/65 text-xs font-medium">{currentWorkspace.name}</span>
             ) : null}
           </>
         )}
@@ -82,7 +82,7 @@ export async function Navbar({ workspaceId }: NavbarProps) {
                   {(session.user.name ?? session.user.email ?? 'U')[0].toUpperCase()}
                 </div>
               )}
-              <span className="text-white/40 text-xs hidden sm:inline group-hover:text-white/60 transition-colors">
+              <span className="text-white/60 text-xs hidden sm:inline group-hover:text-white/85 transition-colors">
                 {session.user.name?.split(' ')[0]}
               </span>
             </button>

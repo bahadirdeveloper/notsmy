@@ -63,11 +63,11 @@ function ToastItem({ toast, onRemove }: { toast: ToastMessage; onRemove: (id: st
 
   return (
     <div
-      className={`pointer-events-auto flex items-center gap-3 px-4 py-2.5 rounded-xl bg-[#1a1a1c] border border-white/[0.08] shadow-2xl shadow-black/50 text-sm transition-all duration-200 ${
+      className={`pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl bg-[#1a1b23] border border-white/[0.12] shadow-2xl shadow-black/60 text-sm transition-all duration-200 ${
         exiting ? 'opacity-0 translate-y-2' : 'opacity-100 translate-y-0 animate-slide-up'
       }`}
     >
-      <span className="text-white/70 text-xs">{toast.message}</span>
+      <span className="text-white/95 text-xs font-medium">{toast.message}</span>
       {toast.undoAction && (
         <button
           onClick={handleUndo}

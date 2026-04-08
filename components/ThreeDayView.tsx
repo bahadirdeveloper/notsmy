@@ -244,7 +244,7 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
     <>
       {/* Search bar — always visible */}
       <div className="relative">
-        <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
         <input
@@ -253,13 +253,13 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Notlarda ara..."
-          className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl pl-10 pr-10 py-3 sm:py-2.5 text-white text-[15px] sm:text-sm placeholder-white/25 focus:outline-none focus:border-[#10b981]/30 focus:bg-white/[0.04] transition-all"
+          className="w-full bg-white/[0.045] border border-white/[0.09] rounded-xl pl-10 pr-10 py-3 sm:py-2.5 text-white text-[15px] sm:text-sm placeholder-white/40 focus:outline-none focus:border-[#10b981]/40 focus:bg-white/[0.06] transition-all"
         />
         {searchQuery && (
           <button
             onClick={() => { setSearchQuery(''); searchRef.current?.focus(); }}
             aria-label="Aramayı temizle"
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-white/30 hover:text-white/60"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-white/50 hover:text-white/80"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -269,7 +269,7 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
       </div>
 
       {searchQuery && (
-        <p className="text-white/20 text-[10px] -mt-1.5 px-1">
+        <p className="text-white/45 text-[11px] -mt-1.5 px-1">
           {filteredNotes.length} sonuç bulundu
         </p>
       )}
@@ -279,7 +279,7 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
 
       {/* Calendar */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <div className="bg-white/[0.02] border border-white/[0.06] rounded-xl overflow-hidden">
+        <div className="bg-white/[0.035] border border-white/[0.09] rounded-xl overflow-hidden shadow-xl shadow-black/20">
           {days.map((date) => (
             <DayColumn
               key={date}
@@ -298,10 +298,10 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
       </DndContext>
 
       {/* Keyboard hints */}
-      <div className="hidden sm:flex items-center justify-center gap-4 text-white/15 text-[10px] py-1">
-        <span><kbd className="px-1.5 py-0.5 rounded bg-white/[0.05] text-white/30 font-mono text-[9px]">N</kbd> yeni not</span>
-        <span><kbd className="px-1.5 py-0.5 rounded bg-white/[0.05] text-white/30 font-mono text-[9px]">/</kbd> ara</span>
-        <span><kbd className="px-1.5 py-0.5 rounded bg-white/[0.05] text-white/30 font-mono text-[9px]">Esc</kbd> kapat</span>
+      <div className="hidden sm:flex items-center justify-center gap-4 text-white/35 text-[11px] py-1">
+        <span><kbd className="px-1.5 py-0.5 rounded bg-white/[0.08] text-white/55 font-mono text-[10px]">N</kbd> yeni not</span>
+        <span><kbd className="px-1.5 py-0.5 rounded bg-white/[0.08] text-white/55 font-mono text-[10px]">/</kbd> ara</span>
+        <span><kbd className="px-1.5 py-0.5 rounded bg-white/[0.08] text-white/55 font-mono text-[10px]">Esc</kbd> kapat</span>
       </div>
 
       {/* FAB — bigger and more prominent on mobile */}
