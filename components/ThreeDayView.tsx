@@ -17,6 +17,7 @@ import { DayColumn } from './DayColumn';
 import { FilterBar } from './FilterBar';
 import { reorderNotes, updateNote, toggleComplete, restoreNote } from '@/actions/notes';
 import { AddNoteModal } from './AddNoteModal';
+import { NoteDetailModal } from './NoteDetailModal';
 import { useToast } from './Toast';
 import type { Note } from '@/types/note';
 
@@ -44,6 +45,7 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
   const router = useRouter();
   const [notes, setNotes] = useState(initialNotes);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
+  const [detailNote, setDetailNote] = useState<Note | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [typeFilter, setTypeFilter] = useState(initialFilter ?? '');
   const [searchQuery, setSearchQuery] = useState('');
@@ -286,6 +288,7 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
               notes={filteredNotes.filter((n) => n.date === date)}
               typeFilter={typeFilter}
               onEdit={setEditingNote}
+              onOpenDetail={setDetailNote}
               onToggleFavorite={handleToggleFavorite}
               onToggleComplete={handleToggleComplete}
               onDelete={handleDelete}
@@ -330,7 +333,24 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
           editingNote={editingNote}
           defaultDate={editingNote.date}
           onClose={() => setEditingNote(null)}
-          onNoteUpdated={handleNoteUpdated}
+          onNoteUpdated={(updated) => {
+            handleNoteUpdated(updated);
+            // If the detail modal is open for the same note, refresh its data
+            setDetailNote((prev) => (prev && prev.id === updated.id ? updated : prev));
+          }}
+        />
+      )}
+
+      {/* Detail modal — read the full note, trigger edit/delete from here */}
+      {detailNote && (
+        <NoteDetailModal
+          // Re-resolve from state so completes/favorites/edits reflect live
+          note={notes.find((n) => n.id === detailNote.id) ?? detailNote}
+          onClose={() => setDetailNote(null)}
+          onEdit={(n) => setEditingNote(n)}
+          onToggleFavorite={handleToggleFavorite}
+          onToggleComplete={handleToggleComplete}
+          onDelete={handleDelete}
         />
       )}
     </>

@@ -11,12 +11,13 @@ interface DayColumnProps {
   notes: Note[];
   typeFilter: string;
   onEdit: (note: Note) => void;
+  onOpenDetail: (note: Note) => void;
   onToggleFavorite: (id: string) => void;
   onToggleComplete: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
-export function DayColumn({ date, isToday, notes, typeFilter, onEdit, onToggleFavorite, onToggleComplete, onDelete }: DayColumnProps) {
+export function DayColumn({ date, isToday, notes, typeFilter, onEdit, onOpenDetail, onToggleFavorite, onToggleComplete, onDelete }: DayColumnProps) {
   const { setNodeRef } = useDroppable({ id: date });
 
   const filtered = notes
@@ -68,7 +69,15 @@ export function DayColumn({ date, isToday, notes, typeFilter, onEdit, onToggleFa
             </div>
           ) : (
             filtered.map((note) => (
-              <NoteCard key={note.id} note={note} onEdit={onEdit} onToggleFavorite={onToggleFavorite} onToggleComplete={onToggleComplete} onDelete={onDelete} />
+              <NoteCard
+                key={note.id}
+                note={note}
+                onEdit={onEdit}
+                onOpenDetail={onOpenDetail}
+                onToggleFavorite={onToggleFavorite}
+                onToggleComplete={onToggleComplete}
+                onDelete={onDelete}
+              />
             ))
           )}
         </div>

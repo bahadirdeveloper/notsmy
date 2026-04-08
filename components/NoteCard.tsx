@@ -13,9 +13,10 @@ const TYPE_CONFIG: Record<NoteType, { icon: string; color: string; bg: string; l
   note:    { icon: '📝', color: '#ec4899', bg: 'rgba(236,72,153,0.1)', label: 'Not' },
 };
 
-export function NoteCard({ note, onEdit, onToggleFavorite, onToggleComplete, onDelete }: {
+export function NoteCard({ note, onEdit, onOpenDetail, onToggleFavorite, onToggleComplete, onDelete }: {
   note: Note;
   onEdit: (note: Note) => void;
+  onOpenDetail?: (note: Note) => void;
   onToggleFavorite?: (id: string) => void;
   onToggleComplete?: (id: string) => void;
   onDelete?: (id: string) => void;
@@ -98,7 +99,7 @@ export function NoteCard({ note, onEdit, onToggleFavorite, onToggleComplete, onD
 
       {/* Favorite toggle — bigger tap target */}
       <button
-        onClick={handleToggleFavorite}
+        onClick={(e) => { e.stopPropagation(); handleToggleFavorite(); }}
         className="flex-shrink-0 p-1 -m-1 transition-transform hover:scale-110 active:scale-95"
         aria-label={note.isFavorite ? 'Favoriden çıkar' : 'Favoriye ekle'}
       >
@@ -121,13 +122,25 @@ export function NoteCard({ note, onEdit, onToggleFavorite, onToggleComplete, onD
         {typeConfig.icon}
       </span>
 
-      {/* Content area */}
-      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+      {/* Content area — tapping this opens the detail view */}
+      <div
+        onClick={() => onOpenDetail?.(note)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onOpenDetail?.(note);
+          }
+        }}
+        role={onOpenDetail ? 'button' : undefined}
+        tabIndex={onOpenDetail ? 0 : undefined}
+        aria-label={onOpenDetail ? `${note.title} detayını aç` : undefined}
+        className="flex-1 min-w-0 flex flex-col gap-0.5 cursor-pointer -my-1 py-1"
+      >
         <div className="flex items-center gap-2">
           {/* Complete toggle (only for tasks) — bigger tap target */}
           {note.type === 'task' && (
             <button
-              onClick={handleToggleComplete}
+              onClick={(e) => { e.stopPropagation(); handleToggleComplete(); }}
               className={`flex-shrink-0 w-5 h-5 rounded border-[1.5px] transition-all ${
                 localCompleted
                   ? 'bg-[#10b981] border-[#10b981]'
@@ -152,14 +165,14 @@ export function NoteCard({ note, onEdit, onToggleFavorite, onToggleComplete, onD
           </span>
         </div>
 
-        {/* Content preview */}
+        {/* Content preview — hints there's more to see */}
         {note.content && !localCompleted && (
           <p className="text-white/30 text-[13px] sm:text-xs truncate leading-snug">{note.content}</p>
         )}
       </div>
 
       {/* Menu button — always visible on mobile, hover-only on desktop */}
-      <div className="relative flex-shrink-0">
+      <div className="relative flex-shrink-0" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={() => setMenuOpen(!menuOpen)}
           className="text-white/30 sm:text-white/0 sm:group-hover:text-white/30 hover:!text-white/60 p-1.5 -m-1 rounded transition-all"
