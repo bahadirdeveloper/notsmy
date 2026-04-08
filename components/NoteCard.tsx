@@ -73,7 +73,7 @@ export function NoteCard({ note, onEdit, onToggleFavorite, onToggleComplete, onD
       ref={setNodeRef}
       style={style}
       className={[
-        'flex items-start gap-2.5 px-3 py-2.5 rounded-lg border text-sm transition-all duration-200 group relative',
+        'flex items-start gap-2 px-3 py-3 sm:py-2.5 rounded-xl sm:rounded-lg border transition-all duration-200 group relative',
         note.isFavorite
           ? 'bg-[#10b981]/[0.04] border-[#10b981]/20 hover:border-[#10b981]/30'
           : 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1]',
@@ -82,32 +82,32 @@ export function NoteCard({ note, onEdit, onToggleFavorite, onToggleComplete, onD
         isDragging ? 'shadow-xl shadow-black/30 z-10' : '',
       ].join(' ')}
     >
-      {/* Drag handle */}
+      {/* Drag handle — wider tap target on mobile */}
       <button
         {...attributes}
         {...listeners}
-        className="text-white/15 hover:text-white/40 cursor-grab active:cursor-grabbing touch-none select-none flex-shrink-0 mt-0.5 transition-colors"
+        className="text-white/15 hover:text-white/40 cursor-grab active:cursor-grabbing touch-none select-none flex-shrink-0 -ml-1 px-1 py-1 transition-colors"
         aria-label="Sürükle"
       >
-        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
           <circle cx="5" cy="3" r="1.5"/><circle cx="11" cy="3" r="1.5"/>
           <circle cx="5" cy="8" r="1.5"/><circle cx="11" cy="8" r="1.5"/>
           <circle cx="5" cy="13" r="1.5"/><circle cx="11" cy="13" r="1.5"/>
         </svg>
       </button>
 
-      {/* Favorite toggle */}
+      {/* Favorite toggle — bigger tap target */}
       <button
         onClick={handleToggleFavorite}
-        className="flex-shrink-0 mt-0.5 transition-transform hover:scale-110 active:scale-95"
+        className="flex-shrink-0 p-1 -m-1 transition-transform hover:scale-110 active:scale-95"
         aria-label={note.isFavorite ? 'Favoriden çıkar' : 'Favoriye ekle'}
       >
         {note.isFavorite ? (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="#10b981" stroke="#10b981" strokeWidth="2">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="#10b981" stroke="#10b981" strokeWidth="2">
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
           </svg>
         ) : (
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/20 hover:text-white/50">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/20 hover:text-white/50">
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
           </svg>
         )}
@@ -115,7 +115,7 @@ export function NoteCard({ note, onEdit, onToggleFavorite, onToggleComplete, onD
 
       {/* Type badge */}
       <span
-        className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded-md font-medium mt-px"
+        className="flex-shrink-0 text-[11px] px-1.5 py-0.5 rounded-md font-medium mt-0.5"
         style={{ color: typeConfig.color, backgroundColor: typeConfig.bg }}
       >
         {typeConfig.icon}
@@ -124,19 +124,19 @@ export function NoteCard({ note, onEdit, onToggleFavorite, onToggleComplete, onD
       {/* Content area */}
       <div className="flex-1 min-w-0 flex flex-col gap-0.5">
         <div className="flex items-center gap-2">
-          {/* Complete toggle (only for tasks) */}
+          {/* Complete toggle (only for tasks) — bigger tap target */}
           {note.type === 'task' && (
             <button
               onClick={handleToggleComplete}
-              className={`flex-shrink-0 w-4 h-4 rounded border transition-all ${
+              className={`flex-shrink-0 w-5 h-5 rounded border-[1.5px] transition-all ${
                 localCompleted
                   ? 'bg-[#10b981] border-[#10b981]'
-                  : 'border-white/20 hover:border-[#10b981]/50'
+                  : 'border-white/25 hover:border-[#10b981]/50'
               } flex items-center justify-center`}
               aria-label={localCompleted ? 'Tamamlanmadı olarak işaretle' : 'Tamamlandı olarak işaretle'}
             >
               {localCompleted && (
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="20 6 9 17 4 12"/>
                 </svg>
               )}
@@ -144,7 +144,7 @@ export function NoteCard({ note, onEdit, onToggleFavorite, onToggleComplete, onD
           )}
           <span
             className={[
-              'truncate leading-tight',
+              'truncate leading-snug text-[15px] sm:text-sm',
               localCompleted ? 'line-through text-white/30' : 'text-white/90',
             ].join(' ')}
           >
@@ -154,18 +154,18 @@ export function NoteCard({ note, onEdit, onToggleFavorite, onToggleComplete, onD
 
         {/* Content preview */}
         {note.content && !localCompleted && (
-          <p className="text-white/25 text-xs truncate leading-tight">{note.content}</p>
+          <p className="text-white/30 text-[13px] sm:text-xs truncate leading-snug">{note.content}</p>
         )}
       </div>
 
-      {/* Menu button */}
+      {/* Menu button — always visible on mobile, hover-only on desktop */}
       <div className="relative flex-shrink-0">
         <button
           onClick={() => setMenuOpen(!menuOpen)}
-          className="text-white/0 group-hover:text-white/30 hover:!text-white/60 px-1 py-0.5 rounded transition-all"
+          className="text-white/30 sm:text-white/0 sm:group-hover:text-white/30 hover:!text-white/60 p-1.5 -m-1 rounded transition-all"
           aria-label="Seçenekler"
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
           </svg>
         </button>

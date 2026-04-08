@@ -37,32 +37,32 @@ export function DayColumn({ date, isToday, notes, typeFilter, onEdit, onToggleFa
   return (
     <div className={`border-b border-white/[0.04] last:border-b-0 transition-colors ${isToday ? 'bg-[#10b981]/[0.02]' : ''}`}>
       {/* Day header */}
-      <div className="flex items-center gap-3 px-4 py-3">
-        <div className={`flex flex-col items-center min-w-[36px] ${isToday ? 'text-[#10b981]' : 'text-white/30'}`}>
-          <span className="text-[10px] font-medium leading-none">{weekday}</span>
-          <span className={`text-lg font-bold leading-tight ${isToday ? '' : 'text-white/50'}`}>{dayNum}</span>
+      <div className="flex items-center gap-3 px-4 py-3.5">
+        <div className={`flex flex-col items-center min-w-[40px] ${isToday ? 'text-[#10b981]' : 'text-white/30'}`}>
+          <span className="text-[11px] font-semibold leading-none tracking-wide">{weekday}</span>
+          <span className={`text-xl font-bold leading-tight mt-0.5 tabular-nums ${isToday ? '' : 'text-white/55'}`}>{dayNum}</span>
         </div>
 
         {isToday && (
-          <span className="bg-[#10b981] text-black text-[9px] font-bold px-2 py-0.5 rounded-full tracking-wider">
+          <span className="bg-[#10b981] text-black text-[10px] font-bold px-2 py-1 rounded-full tracking-wider">
             BUGÜN
           </span>
         )}
 
-        <span className="ml-auto text-white/20 text-[11px] tabular-nums">
+        <span className="ml-auto text-white/25 text-xs tabular-nums">
           {filtered.length > 0 ? `${filtered.length} öğe` : ''}
         </span>
       </div>
 
       {/* Notes list */}
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-        <div ref={setNodeRef} className="px-4 pb-3 flex flex-col gap-1.5 min-h-[44px]">
+        <div ref={setNodeRef} className="px-3 sm:px-4 pb-3 flex flex-col gap-2 sm:gap-1.5 min-h-[52px]">
           {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-4 gap-1">
-              <span className="text-white/10 text-lg">
+            <div className="flex flex-col items-center justify-center py-5 gap-1.5">
+              <span className="text-white/10 text-2xl">
                 {isToday ? '🌟' : '📭'}
               </span>
-              <span className="text-white/15 text-[11px]">
+              <span className="text-white/20 text-xs">
                 {isToday ? 'Bugüne bir not ekle' : 'Henüz not yok'}
               </span>
             </div>

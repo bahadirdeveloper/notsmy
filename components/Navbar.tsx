@@ -19,7 +19,10 @@ export async function Navbar({ workspaceId }: NavbarProps) {
   const currentWorkspace = allWorkspaces.find((w) => w.id === workspaceId) ?? allWorkspaces[0];
 
   return (
-    <nav className="sticky top-0 z-20 flex items-center justify-between px-5 py-3 border-b border-white/[0.06] bg-[#09090b]/80 backdrop-blur-xl">
+    <nav
+      className="sticky top-0 z-20 flex items-center justify-between px-4 sm:px-5 py-3 border-b border-white/[0.06] bg-[#09090b]/80 backdrop-blur-xl"
+      style={{ paddingTop: 'calc(0.75rem + env(safe-area-inset-top, 0px))' }}
+    >
       {/* Left: Logo + Workspace */}
       <div className="flex items-center gap-3">
         <Link href="/" className="flex items-center gap-2 group">

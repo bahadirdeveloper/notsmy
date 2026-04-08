@@ -242,7 +242,7 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
     <>
       {/* Search bar — always visible */}
       <div className="relative">
-        <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/20 pointer-events-none" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/25 pointer-events-none" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
           <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
         <input
@@ -250,15 +250,16 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Notlarda ara...  ( / )"
-          className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl pl-10 pr-9 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#10b981]/30 focus:bg-white/[0.04] transition-all"
+          placeholder="Notlarda ara..."
+          className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl pl-10 pr-10 py-3 sm:py-2.5 text-white text-[15px] sm:text-sm placeholder-white/25 focus:outline-none focus:border-[#10b981]/30 focus:bg-white/[0.04] transition-all"
         />
         {searchQuery && (
           <button
             onClick={() => { setSearchQuery(''); searchRef.current?.focus(); }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/50"
+            aria-label="Aramayı temizle"
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-white/30 hover:text-white/60"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
           </button>
@@ -300,13 +301,14 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
         <span><kbd className="px-1.5 py-0.5 rounded bg-white/[0.05] text-white/30 font-mono text-[9px]">Esc</kbd> kapat</span>
       </div>
 
-      {/* FAB */}
+      {/* FAB — bigger and more prominent on mobile */}
       <button
         onClick={() => setShowAddModal(true)}
-        className="fixed bottom-6 right-6 w-12 h-12 bg-[#10b981] text-black rounded-2xl shadow-lg shadow-[#10b981]/25 hover:shadow-[#10b981]/40 hover:scale-105 active:scale-95 transition-all flex items-center justify-center z-30 group sm:w-14 sm:h-14"
+        className="fixed right-5 w-14 h-14 sm:w-14 sm:h-14 bg-[#10b981] text-black rounded-2xl shadow-xl shadow-[#10b981]/30 hover:shadow-[#10b981]/45 hover:scale-105 active:scale-95 transition-all flex items-center justify-center z-30 group"
+        style={{ bottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}
         aria-label="Yeni not ekle"
       >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="group-hover:rotate-90 transition-transform duration-200">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="group-hover:rotate-90 transition-transform duration-200">
           <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
       </button>

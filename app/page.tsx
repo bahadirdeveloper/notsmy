@@ -35,16 +35,16 @@ export default async function Page({ searchParams }: PageProps) {
     <div className="min-h-screen bg-[#09090b]">
       <Navbar workspaceId={workspaceId} />
 
-      <main className="max-w-2xl mx-auto px-4 py-5 flex flex-col gap-3">
+      <main className="max-w-2xl mx-auto px-4 py-5 pb-28 flex flex-col gap-3.5">
         {/* Navigation */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
             <Link
               href={offset === 0 ? '/' : `/?offset=0`}
-              className={`text-xs px-3 py-1.5 rounded-lg transition-all ${
+              className={`text-[13px] sm:text-xs px-3.5 py-2 sm:py-1.5 rounded-lg transition-all ${
                 offset === 0
                   ? 'bg-[#10b981]/10 text-[#10b981] font-medium'
-                  : 'text-white/30 hover:text-white/60 hover:bg-white/[0.04]'
+                  : 'text-white/35 hover:text-white/60 hover:bg-white/[0.04]'
               }`}
             >
               Bugün
@@ -53,20 +53,20 @@ export default async function Page({ searchParams }: PageProps) {
           <div className="flex items-center gap-1 text-sm">
             <Link
               href={`/?offset=${offset - 3}`}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-white/25 hover:text-white/60 hover:bg-white/[0.04] transition-all"
+              className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/[0.04] active:bg-white/[0.08] transition-all"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="15 18 9 12 15 6"/>
               </svg>
             </Link>
-            <span className="text-white/25 text-xs min-w-[60px] text-center tabular-nums">
+            <span className="text-white/30 text-[13px] sm:text-xs min-w-[60px] text-center tabular-nums">
               {offset === 0 ? '' : `${offset > 0 ? '+' : ''}${offset} gün`}
             </span>
             <Link
               href={`/?offset=${offset + 3}`}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-white/25 hover:text-white/60 hover:bg-white/[0.04] transition-all"
+              className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/[0.04] active:bg-white/[0.08] transition-all"
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="9 18 15 12 9 6"/>
               </svg>
             </Link>
