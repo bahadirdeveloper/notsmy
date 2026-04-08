@@ -2,7 +2,7 @@
   "name": "Notsmy",
   "short_name": "Notsmy",
   "description": "Kişisel ve ekip not yönetimi",
-  "start_url": "/",
+  "start_url": "/?source=pwa",
   "display": "standalone",
   "background_color": "#09090b",
   "theme_color": "#10b981",
