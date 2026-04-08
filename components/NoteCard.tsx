@@ -3,20 +3,29 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { toggleComplete, toggleFavorite, deleteNote } from '@/actions/notes';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Note, NoteType } from '@/types/note';
 
-const TYPE_CONFIG: Record<NoteType, { icon: string; color: string; label: string }> = {
-  task:    { icon: '▢', color: '#f59e0b', label: 'Görev' },
-  meeting: { icon: '📅', color: '#8b5cf6', label: 'Toplantı' },
-  idea:    { icon: '💡', color: '#06b6d4', label: 'Fikir' },
-  note:    { icon: '📝', color: '#ec4899', label: 'Not' },
+const TYPE_CONFIG: Record<NoteType, { icon: string; color: string; bg: string; label: string }> = {
+  task:    { icon: '🔲', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', label: 'Görev' },
+  meeting: { icon: '📅', color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)', label: 'Toplantı' },
+  idea:    { icon: '💡', color: '#06b6d4', bg: 'rgba(6,182,212,0.1)', label: 'Fikir' },
+  note:    { icon: '📝', color: '#ec4899', bg: 'rgba(236,72,153,0.1)', label: 'Not' },
 };
 
-export function NoteCard({ note, onEdit }: { note: Note; onEdit: (note: Note) => void }) {
+export function NoteCard({ note, onEdit, onToggleFavorite, onToggleComplete, onDelete }: {
+  note: Note;
+  onEdit: (note: Note) => void;
+  onToggleFavorite?: (id: string) => void;
+  onToggleComplete?: (id: string) => void;
+  onDelete?: (id: string) => void;
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [localCompleted, setLocalCompleted] = useState(note.isCompleted);
+
+  // Sync with parent state changes
+  useEffect(() => { setLocalCompleted(note.isCompleted); }, [note.isCompleted]);
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: note.id });
@@ -24,31 +33,38 @@ export function NoteCard({ note, onEdit }: { note: Note; onEdit: (note: Note) =>
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.4 : 1,
   };
 
   const typeConfig = TYPE_CONFIG[note.type];
 
   async function handleToggleComplete() {
-    setLocalCompleted(!localCompleted); // optimistic
+    setLocalCompleted(!localCompleted);
+    if (onToggleComplete) onToggleComplete(note.id);
     setIsPending(true);
     try {
       await toggleComplete(note.id);
     } catch {
-      setLocalCompleted(note.isCompleted); // revert on error
+      setLocalCompleted(note.isCompleted);
     } finally {
       setIsPending(false);
     }
   }
 
   async function handleToggleFavorite() {
-    await toggleFavorite(note.id);
+    if (onToggleFavorite) onToggleFavorite(note.id);
+    try {
+      await toggleFavorite(note.id);
+    } catch {
+      // revert handled by revalidation
+    }
   }
 
   async function handleDelete() {
     if (confirm('Bu notu silmek istediğinizden emin misiniz?')) {
-      await deleteNote(note.id);
       setMenuOpen(false);
+      if (onDelete) onDelete(note.id);
+      await deleteNote(note.id);
     }
   }
 
@@ -57,90 +73,118 @@ export function NoteCard({ note, onEdit }: { note: Note; onEdit: (note: Note) =>
       ref={setNodeRef}
       style={style}
       className={[
-        'flex items-center gap-3 px-3 py-2.5 rounded-lg border text-sm transition-colors group',
+        'flex items-start gap-2.5 px-3 py-2.5 rounded-lg border text-sm transition-all duration-200 group relative',
         note.isFavorite
-          ? 'bg-[#10b981]/5 border-[#10b981]/20'
-          : 'bg-white/[0.03] border-white/[0.06]',
-        localCompleted ? 'opacity-50' : '',
-        isPending ? 'opacity-70' : '',
+          ? 'bg-[#10b981]/[0.04] border-[#10b981]/20 hover:border-[#10b981]/30'
+          : 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04] hover:border-white/[0.1]',
+        localCompleted ? 'opacity-40' : '',
+        isPending ? 'opacity-60' : '',
+        isDragging ? 'shadow-xl shadow-black/30 z-10' : '',
       ].join(' ')}
     >
       {/* Drag handle */}
       <button
         {...attributes}
         {...listeners}
-        className="text-white/20 hover:text-white/40 cursor-grab active:cursor-grabbing touch-none select-none flex-shrink-0"
+        className="text-white/15 hover:text-white/40 cursor-grab active:cursor-grabbing touch-none select-none flex-shrink-0 mt-0.5 transition-colors"
         aria-label="Sürükle"
       >
-        ⠿
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+          <circle cx="5" cy="3" r="1.5"/><circle cx="11" cy="3" r="1.5"/>
+          <circle cx="5" cy="8" r="1.5"/><circle cx="11" cy="8" r="1.5"/>
+          <circle cx="5" cy="13" r="1.5"/><circle cx="11" cy="13" r="1.5"/>
+        </svg>
       </button>
 
       {/* Favorite toggle */}
       <button
         onClick={handleToggleFavorite}
-        className="flex-shrink-0 text-base leading-none"
+        className="flex-shrink-0 mt-0.5 transition-transform hover:scale-110 active:scale-95"
         aria-label={note.isFavorite ? 'Favoriden çıkar' : 'Favoriye ekle'}
       >
         {note.isFavorite ? (
-          <span className="text-[#10b981]">⭐</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#10b981" stroke="#10b981" strokeWidth="2">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
         ) : (
-          <span className="text-white/20 hover:text-white/50">☆</span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/20 hover:text-white/50">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
         )}
       </button>
 
-      {/* Type icon */}
+      {/* Type badge */}
       <span
-        className="flex-shrink-0 text-xs"
-        style={{ color: typeConfig.color }}
-        title={typeConfig.label}
+        className="flex-shrink-0 text-[10px] px-1.5 py-0.5 rounded-md font-medium mt-px"
+        style={{ color: typeConfig.color, backgroundColor: typeConfig.bg }}
       >
         {typeConfig.icon}
       </span>
 
-      {/* Complete toggle (only for tasks) + Title */}
-      <div className="flex-1 min-w-0 flex items-center gap-2">
-        {note.type === 'task' && (
-          <button
-            onClick={handleToggleComplete}
-            className="flex-shrink-0 w-4 h-4 rounded border border-white/20 hover:border-[#10b981]/50 flex items-center justify-center"
-            aria-label={localCompleted ? 'Tamamlanmadı olarak işaretle' : 'Tamamlandı olarak işaretle'}
+      {/* Content area */}
+      <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+        <div className="flex items-center gap-2">
+          {/* Complete toggle (only for tasks) */}
+          {note.type === 'task' && (
+            <button
+              onClick={handleToggleComplete}
+              className={`flex-shrink-0 w-4 h-4 rounded border transition-all ${
+                localCompleted
+                  ? 'bg-[#10b981] border-[#10b981]'
+                  : 'border-white/20 hover:border-[#10b981]/50'
+              } flex items-center justify-center`}
+              aria-label={localCompleted ? 'Tamamlanmadı olarak işaretle' : 'Tamamlandı olarak işaretle'}
+            >
+              {localCompleted && (
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+              )}
+            </button>
+          )}
+          <span
+            className={[
+              'truncate leading-tight',
+              localCompleted ? 'line-through text-white/30' : 'text-white/90',
+            ].join(' ')}
           >
-            {localCompleted && <span className="text-[#10b981] text-xs">✓</span>}
-          </button>
+            {note.title}
+          </span>
+        </div>
+
+        {/* Content preview */}
+        {note.content && !localCompleted && (
+          <p className="text-white/25 text-xs truncate leading-tight">{note.content}</p>
         )}
-        <span
-          className={[
-            'truncate',
-            localCompleted ? 'line-through text-white/40' : 'text-white/90',
-          ].join(' ')}
-        >
-          {note.title}
-        </span>
       </div>
 
       {/* Menu button */}
       <div className="relative flex-shrink-0">
         <button
           onClick={() => setMenuOpen(!menuOpen)}
-          className="text-white/20 hover:text-white/60 px-1 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="text-white/0 group-hover:text-white/30 hover:!text-white/60 px-1 py-0.5 rounded transition-all"
           aria-label="Seçenekler"
         >
-          ⋮
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+            <circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/>
+          </svg>
         </button>
         {menuOpen && (
           <>
             <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-            <div className="absolute right-0 top-6 z-20 bg-[#1a1a1a] border border-white/10 rounded-lg py-1 min-w-[120px] shadow-xl">
+            <div className="absolute right-0 top-7 z-20 bg-[#1a1a1a] border border-white/10 rounded-lg py-1 min-w-[130px] shadow-2xl animate-slide-down">
               <button
                 onClick={() => { onEdit(note); setMenuOpen(false); }}
-                className="w-full text-left px-3 py-1.5 text-sm text-white/80 hover:bg-white/5"
+                className="w-full text-left px-3 py-2 text-xs text-white/70 hover:bg-white/[0.06] flex items-center gap-2 transition-colors"
               >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Düzenle
               </button>
               <button
                 onClick={handleDelete}
-                className="w-full text-left px-3 py-1.5 text-sm text-red-400 hover:bg-white/5"
+                className="w-full text-left px-3 py-2 text-xs text-red-400/80 hover:bg-red-500/10 flex items-center gap-2 transition-colors"
               >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                 Sil
               </button>
             </div>

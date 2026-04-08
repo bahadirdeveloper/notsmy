@@ -184,11 +184,9 @@ export async function reorderNotes(items: { id: string; sortOrder: number }[]) {
     if (!membership) throw new Error('Forbidden');
   }
 
-  await db.transaction(async (tx) => {
-    for (const item of items) {
-      await tx.update(notes).set({ sortOrder: item.sortOrder, updatedAt: new Date() }).where(eq(notes.id, item.id));
-    }
-  });
+  for (const item of items) {
+    await db.update(notes).set({ sortOrder: item.sortOrder, updatedAt: new Date() }).where(eq(notes.id, item.id));
+  }
 
   revalidatePath('/');
 }

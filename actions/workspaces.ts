@@ -28,21 +28,19 @@ export async function createWorkspace(name: string) {
 
   const parsed = z.string().min(1).max(255).parse(name);
 
-  return await db.transaction(async (tx) => {
-    const [workspace] = await tx
-      .insert(workspaces)
-      .values({ name: parsed, ownerId: session.user.id })
-      .returning();
+  const [workspace] = await db
+    .insert(workspaces)
+    .values({ name: parsed, ownerId: session.user.id })
+    .returning();
 
-    await tx.insert(workspaceMembers).values({
-      workspaceId: workspace.id,
-      userId: session.user.id,
-      role: 'owner',
-    });
-
-    revalidatePath('/');
-    return workspace;
+  await db.insert(workspaceMembers).values({
+    workspaceId: workspace.id,
+    userId: session.user.id,
+    role: 'owner',
   });
+
+  revalidatePath('/');
+  return workspace;
 }
 
 // Ensure personal workspace exists (called on first login / page load)

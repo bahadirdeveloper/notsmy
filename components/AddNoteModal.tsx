@@ -5,7 +5,7 @@ import { createNote, updateNote } from '@/actions/notes';
 import type { Note, NoteType } from '@/types/note';
 
 const TYPE_OPTIONS: { value: NoteType; label: string; icon: string; color: string }[] = [
-  { value: 'task',    label: 'Görev',    icon: '▢', color: '#f59e0b' },
+  { value: 'task',    label: 'Görev',    icon: '🔲', color: '#f59e0b' },
   { value: 'meeting', label: 'Toplantı', icon: '📅', color: '#8b5cf6' },
   { value: 'idea',    label: 'Fikir',    icon: '💡', color: '#06b6d4' },
   { value: 'note',    label: 'Not',      icon: '📝', color: '#ec4899' },
@@ -16,9 +16,11 @@ interface Props {
   defaultDate: string;
   editingNote?: Note | null;
   onClose: () => void;
+  onNoteCreated?: (note: Note) => void;
+  onNoteUpdated?: (note: Note) => void;
 }
 
-export function AddNoteModal({ workspaceId, defaultDate, editingNote, onClose }: Props) {
+export function AddNoteModal({ workspaceId, defaultDate, editingNote, onClose, onNoteCreated, onNoteUpdated }: Props) {
   const [title, setTitle] = useState(editingNote?.title ?? '');
   const [content, setContent] = useState(editingNote?.content ?? '');
   const [type, setType] = useState<NoteType>(editingNote?.type ?? 'task');
@@ -46,9 +48,11 @@ export function AddNoteModal({ workspaceId, defaultDate, editingNote, onClose }:
     startTransition(async () => {
       try {
         if (editingNote) {
-          await updateNote(editingNote.id, { title: title.trim(), content: content || undefined, type, date });
+          const updated = await updateNote(editingNote.id, { title: title.trim(), content: content || undefined, type, date });
+          if (onNoteUpdated && updated) onNoteUpdated(updated as Note);
         } else {
-          await createNote({ title: title.trim(), content: content || undefined, type, date, workspaceId });
+          const created = await createNote({ title: title.trim(), content: content || undefined, type, date, workspaceId });
+          if (onNoteCreated && created) onNoteCreated(created as Note);
         }
         onClose();
       } catch (err) {
@@ -60,22 +64,29 @@ export function AddNoteModal({ workspaceId, defaultDate, editingNote, onClose }:
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm animate-fade-in" onClick={onClose} />
 
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <div
-          className="w-full max-w-md bg-[#111] border border-white/10 rounded-xl shadow-2xl"
+          className="w-full max-w-md bg-[#111113] border border-white/[0.08] rounded-2xl shadow-2xl shadow-black/50 animate-slide-up"
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-title"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
-            <h2 id="modal-title" className="text-white font-medium text-sm">
+            <h2 id="modal-title" className="text-white/90 font-medium text-sm">
               {editingNote ? 'Notu Düzenle' : 'Yeni Not'}
             </h2>
-            <button onClick={onClose} className="text-white/40 hover:text-white/70 text-lg leading-none">×</button>
+            <button
+              onClick={onClose}
+              className="w-6 h-6 rounded-md flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/[0.06] transition-all"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+            </button>
           </div>
 
           <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
@@ -87,67 +98,68 @@ export function AddNoteModal({ workspaceId, defaultDate, editingNote, onClose }:
                   type="button"
                   onClick={() => setType(t.value)}
                   className={[
-                    'flex-1 flex flex-col items-center gap-1 py-2 rounded-lg border text-xs transition-colors',
+                    'flex-1 flex flex-col items-center gap-1.5 py-2.5 rounded-xl border text-xs transition-all duration-200',
                     type === t.value
-                      ? 'border-current bg-current/10'
-                      : 'border-white/10 bg-white/[0.03] text-white/40 hover:border-white/20',
+                      ? 'scale-[1.02] shadow-lg'
+                      : 'border-white/[0.06] bg-white/[0.02] text-white/35 hover:border-white/[0.12] hover:bg-white/[0.04]',
                   ].join(' ')}
-                  style={type === t.value ? { color: t.color, borderColor: `${t.color}40`, backgroundColor: `${t.color}15` } : {}}
+                  style={type === t.value ? {
+                    color: t.color,
+                    borderColor: `${t.color}35`,
+                    backgroundColor: `${t.color}12`,
+                    boxShadow: `0 4px 20px ${t.color}15`,
+                  } : {}}
                 >
-                  <span>{t.icon}</span>
-                  <span>{t.label}</span>
+                  <span className="text-base">{t.icon}</span>
+                  <span className="font-medium">{t.label}</span>
                 </button>
               ))}
             </div>
 
             {/* Title */}
-            <div>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Başlık..."
-                autoFocus
-                className="w-full bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2 text-white text-sm placeholder-white/25 focus:outline-none focus:border-[#10b981]/50"
-              />
-            </div>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Başlık..."
+              autoFocus
+              className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#10b981]/40 focus:bg-white/[0.04] transition-all"
+            />
 
             {/* Content */}
-            <div>
-              <textarea
-                value={content ?? ''}
-                onChange={(e) => setContent(e.target.value)}
-                placeholder="Detay (opsiyonel)..."
-                rows={3}
-                className="w-full bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2 text-white text-sm placeholder-white/25 focus:outline-none focus:border-[#10b981]/50 resize-none"
-              />
-            </div>
+            <textarea
+              value={content ?? ''}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Detay (opsiyonel)..."
+              rows={3}
+              className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#10b981]/40 focus:bg-white/[0.04] resize-none transition-all"
+            />
 
             {/* Date */}
-            <div>
-              <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-full bg-white/[0.04] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#10b981]/50"
-              />
-            </div>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-[#10b981]/40 focus:bg-white/[0.04] transition-all"
+            />
 
-            {error && <p className="text-red-400 text-xs">{error}</p>}
+            {error && (
+              <p className="text-red-400 text-xs bg-red-400/10 px-3 py-2 rounded-lg">{error}</p>
+            )}
 
             {/* Actions */}
-            <div className="flex gap-2 justify-end">
+            <div className="flex gap-2 justify-end pt-1">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-sm text-white/50 hover:text-white/80"
+                className="px-4 py-2 text-sm text-white/40 hover:text-white/70 rounded-lg hover:bg-white/[0.04] transition-all"
               >
                 İptal
               </button>
               <button
                 type="submit"
                 disabled={isPending}
-                className="px-4 py-2 text-sm bg-[#10b981] text-black font-medium rounded-lg hover:bg-[#0ea371] disabled:opacity-50 transition-colors"
+                className="px-5 py-2 text-sm bg-[#10b981] text-black font-medium rounded-lg hover:bg-[#0ea371] disabled:opacity-40 transition-all shadow-lg shadow-[#10b981]/20 hover:shadow-[#10b981]/30"
               >
                 {isPending ? 'Kaydediliyor...' : editingNote ? 'Güncelle' : 'Ekle'}
               </button>

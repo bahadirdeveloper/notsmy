@@ -3,15 +3,18 @@ import { NextResponse } from 'next/server';
 
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
-  const isLoginPage = req.nextUrl.pathname === '/login';
-  const isApiAuth = req.nextUrl.pathname.startsWith('/api/auth');
-  const isCron = req.nextUrl.pathname.startsWith('/api/cron');
+  const { pathname } = req.nextUrl;
+  const isLoginPage = pathname === '/login';
+  const isLanding = pathname === '/landing';
+  const isApiAuth = pathname.startsWith('/api/auth');
+  const isCron = pathname.startsWith('/api/cron');
+  const isPublicAsset = pathname.startsWith('/icons/') || pathname === '/manifest.json' || pathname === '/sw.js';
 
   if (isApiAuth) return NextResponse.next();
-  // SECURITY: /api/cron routes bypass auth — cron handlers must validate Authorization header
   if (isCron) return NextResponse.next();
+  if (isLanding || isPublicAsset) return NextResponse.next();
   if (!isLoggedIn && !isLoginPage) {
-    return NextResponse.redirect(new URL('/login', req.url));
+    return NextResponse.redirect(new URL('/landing', req.url));
   }
   if (isLoggedIn && isLoginPage) {
     return NextResponse.redirect(new URL('/', req.url));

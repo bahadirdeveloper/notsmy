@@ -18,7 +18,8 @@ export async function GET(request: NextRequest) {
   }
 
   const now = new Date();
-  // Find notes where: type=task, not completed, reminder not sent,
+  const today = now.toISOString().split('T')[0]; // YYYY-MM-DD
+  // Find today's tasks: not completed, reminder not sent,
   // and created more than 20 hours ago (within 24h window = give 4h warning)
   const twentyHoursAgo = new Date(now.getTime() - 20 * 60 * 60 * 1000);
 
@@ -33,6 +34,7 @@ export async function GET(request: NextRequest) {
     .where(
       and(
         eq(notes.type, 'task'),
+        eq(notes.date, today),
         eq(notes.isCompleted, false),
         eq(notes.reminderSent, false),
         lt(notes.createdAt, twentyHoursAgo)

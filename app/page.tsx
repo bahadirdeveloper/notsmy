@@ -1,12 +1,9 @@
-import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { getNotes } from '@/actions/notes';
 import { ensurePersonalWorkspace } from '@/actions/workspaces';
 import { Navbar } from '@/components/Navbar';
-import { FilterBar } from '@/components/FilterBar';
-import { ThreeDayView } from '@/components/ThreeDayView';
-import { AddNoteButton } from '@/components/AddNoteButton';
+import { ThreeDayViewWrapper } from '@/components/ThreeDayViewWrapper';
 
 interface PageProps {
   searchParams: Promise<{ type?: string; offset?: string; workspace?: string }>;
@@ -24,7 +21,6 @@ export default async function Page({ searchParams }: PageProps) {
 
   const params = await searchParams;
   const offset = parseInt(params.offset ?? '0', 10);
-  const typeFilter = params.type ?? null;
 
   const workspace = await ensurePersonalWorkspace();
   const workspaceId = params.workspace ?? workspace.id;
@@ -38,41 +34,51 @@ export default async function Page({ searchParams }: PageProps) {
     <div className="min-h-screen bg-[#09090b]">
       <Navbar workspaceId={workspaceId} />
 
-      <main className="max-w-2xl mx-auto px-4 py-6 flex flex-col gap-4">
-        {/* Top controls */}
-        <div className="flex items-center gap-2">
-          <Suspense fallback={null}>
-            <FilterBar />
-          </Suspense>
-          <div className="ml-auto flex items-center gap-2 text-sm text-white/40">
+      <main className="max-w-2xl mx-auto px-4 py-5 flex flex-col gap-3">
+        {/* Navigation */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1">
             <a
-              href={`/?offset=${offset - 3}${typeFilter ? `&type=${typeFilter}` : ''}`}
-              className="px-2 py-1 rounded hover:bg-white/5 hover:text-white/70 transition-colors"
+              href={offset === 0 ? '/' : `/?offset=0`}
+              className={`text-xs px-3 py-1.5 rounded-lg transition-all ${
+                offset === 0
+                  ? 'bg-[#10b981]/10 text-[#10b981] font-medium'
+                  : 'text-white/30 hover:text-white/60 hover:bg-white/[0.04]'
+              }`}
             >
-              ◀
+              Bugün
             </a>
-            <span className="text-xs">{offset === 0 ? 'Bu Hafta' : `${offset > 0 ? '+' : ''}${offset} gün`}</span>
+          </div>
+          <div className="flex items-center gap-1 text-sm">
             <a
-              href={`/?offset=${offset + 3}${typeFilter ? `&type=${typeFilter}` : ''}`}
-              className="px-2 py-1 rounded hover:bg-white/5 hover:text-white/70 transition-colors"
+              href={`/?offset=${offset - 3}`}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-white/25 hover:text-white/60 hover:bg-white/[0.04] transition-all"
             >
-              ▶
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+            </a>
+            <span className="text-white/25 text-xs min-w-[60px] text-center tabular-nums">
+              {offset === 0 ? '' : `${offset > 0 ? '+' : ''}${offset} gün`}
+            </span>
+            <a
+              href={`/?offset=${offset + 3}`}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-white/25 hover:text-white/60 hover:bg-white/[0.04] transition-all"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
             </a>
           </div>
         </div>
 
-        {/* 3-day calendar */}
-        <ThreeDayView
+        {/* Filter + 3-day calendar */}
+        <ThreeDayViewWrapper
           initialNotes={notes}
           workspaceId={workspaceId}
           startDate={startDate}
-          typeFilter={typeFilter}
+          typeFilter={null}
         />
-
-        {/* Floating add button */}
-        <Suspense fallback={null}>
-          <AddNoteButton workspaceId={workspaceId} defaultDate={startDate} />
-        </Suspense>
       </main>
     </div>
   );
