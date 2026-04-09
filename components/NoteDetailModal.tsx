@@ -152,9 +152,15 @@ export function NoteDetailModal({
             >
               {localNote.title}
             </h2>
-            <p className="mt-1.5 text-white/55 text-xs">
-              {formatLongDate(localNote.date)}
-            </p>
+            {localNote.date ? (
+              <p className="mt-1.5 text-white/55 text-xs">
+                {formatLongDate(localNote.date)}
+              </p>
+            ) : (
+              <p className="mt-1.5 text-[#10b981] text-xs font-medium">
+                Genel görev
+              </p>
+            )}
           </div>
 
           {/* Content — preserves newlines, full text */}
