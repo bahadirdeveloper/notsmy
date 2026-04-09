@@ -14,19 +14,37 @@ const TYPE_OPTIONS: { value: NoteType; label: string; icon: string; color: strin
 interface Props {
   workspaceId: string;
   defaultDate: string;
+  defaultPersistent?: boolean;
   editingNote?: Note | null;
   onClose: () => void;
   onNoteCreated?: (note: Note) => void;
   onNoteUpdated?: (note: Note) => void;
 }
 
-export function AddNoteModal({ workspaceId, defaultDate, editingNote, onClose, onNoteCreated, onNoteUpdated }: Props) {
+export function AddNoteModal({
+  workspaceId,
+  defaultDate,
+  defaultPersistent = false,
+  editingNote,
+  onClose,
+  onNoteCreated,
+  onNoteUpdated,
+}: Props) {
   const [title, setTitle] = useState(editingNote?.title ?? '');
   const [content, setContent] = useState(editingNote?.content ?? '');
   const [type, setType] = useState<NoteType>(editingNote?.type ?? 'task');
   const [date, setDate] = useState(editingNote?.date ?? defaultDate);
+  const [isPersistent, setIsPersistent] = useState(
+    editingNote ? editingNote.date === null : defaultPersistent,
+  );
   const [error, setError] = useState('');
   const [isPending, startTransition] = useTransition();
+
+  useEffect(() => {
+    if (type !== 'task' && isPersistent) {
+      setIsPersistent(false);
+    }
+  }, [type, isPersistent]);
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -47,11 +65,23 @@ export function AddNoteModal({ workspaceId, defaultDate, editingNote, onClose, o
 
     startTransition(async () => {
       try {
+        const payloadDate = isPersistent ? null : date;
         if (editingNote) {
-          const updated = await updateNote(editingNote.id, { title: title.trim(), content: content || undefined, type, date });
+          const updated = await updateNote(editingNote.id, {
+            title: title.trim(),
+            content: content || undefined,
+            type,
+            date: payloadDate,
+          });
           if (onNoteUpdated && updated) onNoteUpdated(updated as Note);
         } else {
-          const created = await createNote({ title: title.trim(), content: content || undefined, type, date, workspaceId });
+          const created = await createNote({
+            title: title.trim(),
+            content: content || undefined,
+            type,
+            date: payloadDate,
+            workspaceId,
+          });
           if (onNoteCreated && created) onNoteCreated(created as Note);
         }
         onClose();
@@ -144,15 +174,32 @@ export function AddNoteModal({ workspaceId, defaultDate, editingNote, onClose, o
               className="w-full bg-white/[0.045] border border-white/[0.1] rounded-xl px-4 py-3 sm:py-2.5 text-white text-base sm:text-sm placeholder-white/40 focus:outline-none focus:border-[#10b981]/50 focus:bg-white/[0.06] resize-none transition-all disabled:opacity-50"
             />
 
-            {/* Date */}
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              min="2020-01-01"
-              max="2099-12-31"
-              className="w-full bg-white/[0.045] border border-white/[0.1] rounded-xl px-4 py-3 sm:py-2.5 text-white text-base sm:text-sm focus:outline-none focus:border-[#10b981]/50 focus:bg-white/[0.06] transition-all disabled:opacity-50"
-            />
+            {/* Persistent toggle — only meaningful for tasks */}
+            {type === 'task' && (
+              <label className="flex items-center gap-3 px-4 py-3 sm:py-2.5 rounded-xl bg-white/[0.045] border border-white/[0.1] cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={isPersistent}
+                  onChange={(e) => setIsPersistent(e.target.checked)}
+                  className="w-4 h-4 accent-[#10b981]"
+                />
+                <span className="text-white/85 text-[15px] sm:text-sm">
+                  Kalıcı görev (tarihsiz)
+                </span>
+              </label>
+            )}
+
+            {/* Date — hidden when the task is persistent */}
+            {!isPersistent && (
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                min="2020-01-01"
+                max="2099-12-31"
+                className="w-full bg-white/[0.045] border border-white/[0.1] rounded-xl px-4 py-3 sm:py-2.5 text-white text-base sm:text-sm focus:outline-none focus:border-[#10b981]/50 focus:bg-white/[0.06] transition-all disabled:opacity-50"
+              />
+            )}
 
             {error && (
               <p className="text-red-400 text-[13px] sm:text-xs bg-red-400/10 px-3 py-2 rounded-lg">{error}</p>
