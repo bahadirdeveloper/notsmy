@@ -113,8 +113,14 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
   }, []);
 
   const handleNoteCreated = useCallback((note: Note) => {
+    // Persistent tasks have no date — nothing to show in the calendar.
+    if (note.date === null) {
+      showToast('Kalıcı görev eklendi');
+      router.refresh();
+      return;
+    }
+
     // If the created note is within the current 3-day view, show it optimistically.
-    // Otherwise, navigate to the view containing its date so the user can see it.
     if (days.includes(note.date)) {
       setNotes((prev) => [...prev, note]);
       showToast('Not eklendi');
@@ -130,14 +136,12 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
       (Date.UTC(ny, nm - 1, nd) - Date.UTC(ty, tm - 1, td)) / msPerDay
     );
 
-    // Format date for toast (Turkish short form)
     const label = new Date(note.date + 'T00:00:00').toLocaleDateString('tr-TR', {
       day: 'numeric',
       month: 'long',
     });
     showToast(`Not ${label} tarihine eklendi`);
 
-    // Navigate to the view starting on the note's date
     const target = diffDays === 0 ? '/' : `/?offset=${diffDays}`;
     router.push(target);
     router.refresh();
@@ -199,6 +203,9 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
 
     const activeNote = notes.find((n) => n.id === active.id);
     if (!activeNote) return;
+
+    // Persistent tasks should never reach the calendar's DnD context, but guard anyway.
+    if (activeNote.date === null) return;
 
     const overId = String(over.id);
     const isDropOnDay = days.includes(overId);
@@ -331,7 +338,7 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
         <AddNoteModal
           workspaceId={workspaceId}
           editingNote={editingNote}
-          defaultDate={editingNote.date}
+          defaultDate={editingNote.date ?? startDate}
           onClose={() => setEditingNote(null)}
           onNoteUpdated={(updated) => {
             handleNoteUpdated(updated);
