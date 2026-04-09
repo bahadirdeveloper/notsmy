@@ -1,10 +1,10 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { auth } from '@/auth';
-import { getNotes } from '@/actions/notes';
+import { getNotes, getPersistentTasks, getMonthlyStats } from '@/actions/notes';
 import { ensurePersonalWorkspace } from '@/actions/workspaces';
 import { Navbar } from '@/components/Navbar';
-import { ThreeDayViewWrapper } from '@/components/ThreeDayViewWrapper';
+import { PageShell } from '@/components/PageShell';
 
 interface PageProps {
   searchParams: Promise<{ type?: string; offset?: string; workspace?: string }>;
@@ -29,15 +29,23 @@ export default async function Page({ searchParams }: PageProps) {
   const startDate = getDateFromOffset(offset);
   const endDate = getDateFromOffset(offset + 2);
 
-  const notes = await getNotes(workspaceId, startDate, endDate);
+  const now = new Date();
+  const statsYear = now.getFullYear();
+  const statsMonth = now.getMonth() + 1;
+
+  const [notes, persistentTasks, monthlyStats] = await Promise.all([
+    getNotes(workspaceId, startDate, endDate),
+    getPersistentTasks(workspaceId),
+    getMonthlyStats(workspaceId, statsYear, statsMonth),
+  ]);
 
   return (
     <div className="min-h-screen">
       <Navbar workspaceId={workspaceId} />
 
-      <main className="max-w-2xl mx-auto px-4 py-5 pb-28 flex flex-col gap-3.5">
+      <main className="max-w-7xl mx-auto px-4 py-5 pb-28">
         {/* Navigation */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-3.5">
           <div className="flex items-center gap-1">
             <Link
               href={offset === 0 ? '/' : `/?offset=0`}
@@ -73,12 +81,14 @@ export default async function Page({ searchParams }: PageProps) {
           </div>
         </div>
 
-        {/* Filter + 3-day calendar */}
-        <ThreeDayViewWrapper
+        <PageShell
           initialNotes={notes}
+          initialPersistentTasks={persistentTasks}
           workspaceId={workspaceId}
           startDate={startDate}
-          typeFilter={null}
+          monthlyStats={monthlyStats}
+          statsYear={statsYear}
+          statsMonth={statsMonth}
         />
       </main>
     </div>

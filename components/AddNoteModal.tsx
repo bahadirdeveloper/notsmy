@@ -40,11 +40,8 @@ export function AddNoteModal({
   const [error, setError] = useState('');
   const [isPending, startTransition] = useTransition();
 
-  useEffect(() => {
-    if (type !== 'task' && isPersistent) {
-      setIsPersistent(false);
-    }
-  }, [type, isPersistent]);
+  // Only tasks can be persistent — force-off when type differs.
+  const effectivePersistent = type === 'task' && isPersistent;
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -65,7 +62,7 @@ export function AddNoteModal({
 
     startTransition(async () => {
       try {
-        const payloadDate = isPersistent ? null : date;
+        const payloadDate = effectivePersistent ? null : date;
         if (editingNote) {
           const updated = await updateNote(editingNote.id, {
             title: title.trim(),
@@ -190,7 +187,7 @@ export function AddNoteModal({
             )}
 
             {/* Date — hidden when the task is persistent */}
-            {!isPersistent && (
+            {!effectivePersistent && (
               <input
                 type="date"
                 value={date}
