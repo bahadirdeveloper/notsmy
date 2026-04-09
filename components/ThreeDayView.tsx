@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   DndContext,
   closestCenter,
@@ -16,16 +15,16 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { DayColumn } from './DayColumn';
 import { FilterBar } from './FilterBar';
 import { reorderNotes, updateNote, toggleComplete, restoreNote } from '@/actions/notes';
-import { AddNoteModal } from './AddNoteModal';
-import { NoteDetailModal } from './NoteDetailModal';
 import { useToast } from './Toast';
 import type { Note } from '@/types/note';
 
 interface ThreeDayViewProps {
   initialNotes: Note[];
-  workspaceId: string;
   startDate: string;
   typeFilter: string | null;
+  onRequestEdit: (note: Note) => void;
+  onOpenDetail: (note: Note) => void;
+  onRequestAdd: () => void;
 }
 
 function addDays(dateStr: string, days: number): string {
@@ -41,12 +40,15 @@ function todays(): string {
   return new Date().toISOString().split('T')[0];
 }
 
-export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter: initialFilter }: ThreeDayViewProps) {
-  const router = useRouter();
+export function ThreeDayView({
+  initialNotes,
+  startDate,
+  typeFilter: initialFilter,
+  onRequestEdit,
+  onOpenDetail,
+  onRequestAdd,
+}: ThreeDayViewProps) {
   const [notes, setNotes] = useState(initialNotes);
-  const [editingNote, setEditingNote] = useState<Note | null>(null);
-  const [detailNote, setDetailNote] = useState<Note | null>(null);
-  const [showAddModal, setShowAddModal] = useState(false);
   const [typeFilter, setTypeFilter] = useState(initialFilter ?? '');
   const [searchQuery, setSearchQuery] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
@@ -96,14 +98,14 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
       // N: new note
       if (e.key === 'n' || e.key === 'N') {
         e.preventDefault();
-        setShowAddModal(true);
+        onRequestAdd();
         return;
       }
     }
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [onRequestAdd]);
 
   // --- Handlers ---
   const handleToggleFavorite = useCallback((id: string) => {
@@ -111,46 +113,6 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
       prev.map((n) => (n.id === id ? { ...n, isFavorite: !n.isFavorite } : n))
     );
   }, []);
-
-  const handleNoteCreated = useCallback((note: Note) => {
-    // Persistent tasks have no date — nothing to show in the calendar.
-    if (note.date === null) {
-      showToast('Kalıcı görev eklendi');
-      router.refresh();
-      return;
-    }
-
-    // If the created note is within the current 3-day view, show it optimistically.
-    if (days.includes(note.date)) {
-      setNotes((prev) => [...prev, note]);
-      showToast('Not eklendi');
-      return;
-    }
-
-    // Compute offset so note.date lands on day 1 of the new view
-    const t = todays();
-    const [ty, tm, td] = t.split('-').map(Number);
-    const [ny, nm, nd] = note.date.split('-').map(Number);
-    const msPerDay = 86400000;
-    const diffDays = Math.round(
-      (Date.UTC(ny, nm - 1, nd) - Date.UTC(ty, tm - 1, td)) / msPerDay
-    );
-
-    const label = new Date(note.date + 'T00:00:00').toLocaleDateString('tr-TR', {
-      day: 'numeric',
-      month: 'long',
-    });
-    showToast(`Not ${label} tarihine eklendi`);
-
-    const target = diffDays === 0 ? '/' : `/?offset=${diffDays}`;
-    router.push(target);
-    router.refresh();
-  }, [days, router, showToast]);
-
-  const handleNoteUpdated = useCallback((note: Note) => {
-    setNotes((prev) => prev.map((n) => (n.id === note.id ? note : n)));
-    showToast('Not güncellendi');
-  }, [showToast]);
 
   const handleToggleComplete = useCallback((id: string) => {
     setNotes((prev) => {
@@ -294,8 +256,8 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
               isToday={date === today}
               notes={filteredNotes.filter((n) => n.date === date)}
               typeFilter={typeFilter}
-              onEdit={setEditingNote}
-              onOpenDetail={setDetailNote}
+              onEdit={onRequestEdit}
+              onOpenDetail={onOpenDetail}
               onToggleFavorite={handleToggleFavorite}
               onToggleComplete={handleToggleComplete}
               onDelete={handleDelete}
@@ -313,7 +275,7 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
 
       {/* FAB — bigger and more prominent on mobile */}
       <button
-        onClick={() => setShowAddModal(true)}
+        onClick={onRequestAdd}
         className="fixed right-5 w-14 h-14 sm:w-14 sm:h-14 bg-[#10b981] text-black rounded-2xl shadow-xl shadow-[#10b981]/30 hover:shadow-[#10b981]/45 hover:scale-105 active:scale-95 transition-all flex items-center justify-center z-30 group"
         style={{ bottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}
         aria-label="Yeni not ekle"
@@ -322,44 +284,6 @@ export function ThreeDayView({ initialNotes, workspaceId, startDate, typeFilter:
           <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
       </button>
-
-      {/* Add modal */}
-      {showAddModal && (
-        <AddNoteModal
-          workspaceId={workspaceId}
-          defaultDate={startDate}
-          onClose={() => setShowAddModal(false)}
-          onNoteCreated={handleNoteCreated}
-        />
-      )}
-
-      {/* Edit modal */}
-      {editingNote && (
-        <AddNoteModal
-          workspaceId={workspaceId}
-          editingNote={editingNote}
-          defaultDate={editingNote.date ?? startDate}
-          onClose={() => setEditingNote(null)}
-          onNoteUpdated={(updated) => {
-            handleNoteUpdated(updated);
-            // If the detail modal is open for the same note, refresh its data
-            setDetailNote((prev) => (prev && prev.id === updated.id ? updated : prev));
-          }}
-        />
-      )}
-
-      {/* Detail modal — read the full note, trigger edit/delete from here */}
-      {detailNote && (
-        <NoteDetailModal
-          // Re-resolve from state so completes/favorites/edits reflect live
-          note={notes.find((n) => n.id === detailNote.id) ?? detailNote}
-          onClose={() => setDetailNote(null)}
-          onEdit={(n) => setEditingNote(n)}
-          onToggleFavorite={handleToggleFavorite}
-          onToggleComplete={handleToggleComplete}
-          onDelete={handleDelete}
-        />
-      )}
     </>
   );
 }

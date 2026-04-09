@@ -81,7 +81,6 @@ function PageShellInner({
 
         <ThreeDayView
           initialNotes={initialNotes}
-          workspaceId={workspaceId}
           startDate={startDate}
           typeFilter={null}
           onRequestEdit={setEditingNote}
