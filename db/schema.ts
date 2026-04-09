@@ -73,7 +73,7 @@ export const notes = pgTable('notes', {
   title: varchar('title', { length: 500 }).notNull(),
   content: text('content'),
   type: noteTypeEnum('type').default('note').notNull(),
-  date: date('date').notNull(),
+  date: date('date'),
   isCompleted: boolean('is_completed').default(false).notNull(),
   isFavorite: boolean('is_favorite').default(false).notNull(),
   sortOrder: integer('sort_order').default(0).notNull(),
