@@ -6,7 +6,11 @@ export interface Note {
   title: string;
   content: string | null;
   type: NoteType;
-  date: string;
+  /**
+   * YYYY-MM-DD for day-scoped notes, or null for persistent tasks.
+   * A null date is only valid when `type === 'task'`.
+   */
+  date: string | null;
   isCompleted: boolean;
   isFavorite: boolean;
   sortOrder: number;
