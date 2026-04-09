@@ -4,15 +4,21 @@ import { db } from '@/db';
 import { notes, workspaceMembers } from '@/db/schema';
 import { auth } from '@/auth';
 import { z } from 'zod';
-import { eq, and, between, desc, asc, max, inArray } from 'drizzle-orm';
+import { eq, and, between, desc, asc, max, inArray, isNull, not, gte, lte, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 
 const NoteSchema = z.object({
   title: z.string().min(1).max(500),
   content: z.string().optional(),
   type: z.enum(['task', 'meeting', 'idea', 'note']),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/), // YYYY-MM-DD
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/) // YYYY-MM-DD
+    .nullable(),
   workspaceId: z.string().uuid(),
+}).refine((v) => v.date !== null || v.type === 'task', {
+  message: 'Only task notes may have a null date',
+  path: ['date'],
 });
 
 async function verifyNoteAccess(noteId: string, userId: string) {
@@ -52,7 +58,13 @@ export async function getNotes(workspaceId: string, startDate: string, endDate: 
   return db
     .select()
     .from(notes)
-    .where(and(eq(notes.workspaceId, workspaceId), between(notes.date, startDate, endDate)))
+    .where(
+      and(
+        eq(notes.workspaceId, workspaceId),
+        not(isNull(notes.date)),
+        between(notes.date, startDate, endDate),
+      ),
+    )
     .orderBy(asc(notes.sortOrder), desc(notes.createdAt));
 }
 
@@ -71,10 +83,14 @@ export async function createNote(data: z.infer<typeof NoteSchema>) {
   if (!membership) throw new Error('Forbidden: not a member of this workspace');
 
   // Get max sort_order for today + 1
+  const dateFilter = parsed.date === null
+    ? isNull(notes.date)
+    : eq(notes.date, parsed.date);
+
   const [maxResult] = await db
     .select({ maxOrder: max(notes.sortOrder) })
     .from(notes)
-    .where(and(eq(notes.workspaceId, parsed.workspaceId), eq(notes.date, parsed.date)));
+    .where(and(eq(notes.workspaceId, parsed.workspaceId), dateFilter));
 
   const sortOrder = (maxResult?.maxOrder ?? -1) + 1;
 
@@ -129,10 +145,13 @@ const RestoreSchema = z.object({
   title: z.string().min(1).max(500),
   content: z.string().nullable().optional(),
   type: z.enum(['task', 'meeting', 'idea', 'note']),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
   isCompleted: z.boolean().optional(),
   isFavorite: z.boolean().optional(),
   sortOrder: z.number().int().optional(),
+}).refine((v) => v.date !== null || v.type === 'task', {
+  message: 'Only task notes may have a null date',
+  path: ['date'],
 });
 
 export async function restoreNote(data: z.infer<typeof RestoreSchema>) {
@@ -268,4 +287,118 @@ export async function reorderNotes(items: { id: string; sortOrder: number }[]) {
   }
 
   revalidatePath('/');
+}
+
+// Get all persistent (day-independent) tasks for a workspace.
+export async function getPersistentTasks(workspaceId: string) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error('Unauthorized');
+
+  const [membership] = await db
+    .select()
+    .from(workspaceMembers)
+    .where(
+      and(
+        eq(workspaceMembers.workspaceId, workspaceId),
+        eq(workspaceMembers.userId, session.user.id),
+      ),
+    );
+  if (!membership) throw new Error('Forbidden');
+
+  return db
+    .select()
+    .from(notes)
+    .where(
+      and(
+        eq(notes.workspaceId, workspaceId),
+        isNull(notes.date),
+        eq(notes.type, 'task'),
+      ),
+    )
+    .orderBy(asc(notes.isCompleted), asc(notes.sortOrder), desc(notes.createdAt));
+}
+
+// Return { completed, total } task counts for a given month.
+// Counts:
+//   - day-scoped tasks whose date falls in the month
+//   - persistent tasks (date IS NULL) — all open ones when viewing the current
+//     month, plus those completed in the target month (attributed via updatedAt).
+export async function getMonthlyStats(
+  workspaceId: string,
+  year: number,
+  month: number, // 1-12
+) {
+  const session = await auth();
+  if (!session?.user?.id) throw new Error('Unauthorized');
+
+  const [membership] = await db
+    .select()
+    .from(workspaceMembers)
+    .where(
+      and(
+        eq(workspaceMembers.workspaceId, workspaceId),
+        eq(workspaceMembers.userId, session.user.id),
+      ),
+    );
+  if (!membership) throw new Error('Forbidden');
+
+  const firstDay = `${year}-${String(month).padStart(2, '0')}-01`;
+  const lastDayDate = new Date(year, month, 0); // day 0 of next month = last day of this month
+  const lastDay = `${year}-${String(month).padStart(2, '0')}-${String(
+    lastDayDate.getDate(),
+  ).padStart(2, '0')}`;
+
+  const now = new Date();
+  const isCurrentMonth =
+    now.getFullYear() === year && now.getMonth() + 1 === month;
+
+  // Day-scoped tasks whose date is in the month.
+  const dayScoped = await db
+    .select({ isCompleted: notes.isCompleted })
+    .from(notes)
+    .where(
+      and(
+        eq(notes.workspaceId, workspaceId),
+        eq(notes.type, 'task'),
+        not(isNull(notes.date)),
+        gte(notes.date, firstDay),
+        lte(notes.date, lastDay),
+      ),
+    );
+
+  // Persistent tasks. For the current month we count every persistent task.
+  // For past months we only count persistent tasks that were completed within
+  // that month (attributed via updated_at).
+  const monthStart = new Date(year, month - 1, 1);
+  const monthEnd = new Date(year, month, 1); // exclusive upper bound
+
+  const persistent = isCurrentMonth
+    ? await db
+        .select({ isCompleted: notes.isCompleted })
+        .from(notes)
+        .where(
+          and(
+            eq(notes.workspaceId, workspaceId),
+            eq(notes.type, 'task'),
+            isNull(notes.date),
+          ),
+        )
+    : await db
+        .select({ isCompleted: notes.isCompleted })
+        .from(notes)
+        .where(
+          and(
+            eq(notes.workspaceId, workspaceId),
+            eq(notes.type, 'task'),
+            isNull(notes.date),
+            eq(notes.isCompleted, true),
+            gte(notes.updatedAt, monthStart),
+            sql`${notes.updatedAt} < ${monthEnd}`,
+          ),
+        );
+
+  const rows = [...dayScoped, ...persistent];
+  const total = rows.length;
+  const completed = rows.filter((r) => r.isCompleted).length;
+  return { completed, total };
 }
